@@ -1,0 +1,7 @@
+CREATE TABLE organization (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    cnpj VARCHAR(18) UNIQUE NOT NULL,
+    location VARCHAR(255),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
