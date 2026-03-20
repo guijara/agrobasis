@@ -3,8 +3,10 @@ package com.agrobasis.core_service.organization;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface OrganizationRepository extends JpaRepository<Organization,UUID> {
+    Optional<Organization> existsOrganizationByCnpj(String cnpj);
 }
