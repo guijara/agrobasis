@@ -23,7 +23,7 @@ public class OrganizationServiceTest {
     @Test
     void shouldCreateOrganizationSuccessfully() {
         // Arrange
-        CreateOrganizationDto dto = new CreateOrganizationDto("Fazenda Nova", "11.222.333/0001-44", "Lucas do Rio Verde - MT");
+        OrganizationCreateRequest dto = new OrganizationCreateRequest("Fazenda Nova", "11.222.333/0001-44", "Lucas do Rio Verde - MT");
 
         // Ensinamos o repositório falso a dizer "não existe" quando perguntarem o CNPJ
         when(organizationRepository.existsByCnpj(dto.cnpj())).thenReturn(false);
@@ -35,17 +35,17 @@ public class OrganizationServiceTest {
         when(organizationRepository.save(any(Organization.class))).thenReturn(savedEntity);
 
         // Act
-        Organization result = organizationService.createOrganization(dto);
+        OrganizationResponseDto result = organizationService.createOrganization(dto);
 
         // Assert
-        assertThat(result.getName()).isEqualTo("Fazenda Nova");
+        assertThat(result.name()).isEqualTo("Fazenda Nova");
         verify(organizationRepository, times(1)).save(any(Organization.class));
     }
 
     @Test
     void shouldThrowExceptionWhenCnpjAlreadyExists() {
         // Arrange (Preparação)
-        CreateOrganizationDto dto = new CreateOrganizationDto("Fazenda Duplicada", "11.222.333/0001-44", "Mutum - MT");
+        OrganizationCreateRequest dto = new OrganizationCreateRequest("Fazenda Duplicada", "11.222.333/0001-44", "Mutum - MT");
 
         // Ensinamos o repositório a dizer "SIM, já existe"
         when(organizationRepository.existsByCnpj(dto.cnpj())).thenReturn(true);

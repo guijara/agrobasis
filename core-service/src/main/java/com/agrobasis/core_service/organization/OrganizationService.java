@@ -7,27 +7,29 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class OrganizationService {
 
-    private OrganizationRepository organizationRepository;
+    private final OrganizationRepository organizationRepository;
 
-    public void organizationService(OrganizationRepository organizationRepository){
-        this.organizationRepository = organizationRepository;
-    }
+    public OrganizationResponseDto createOrganization(OrganizationCreateRequest organizationCreateRequest){
 
-    public Organization createOrganization(CreateOrganizationDto createOrganizationDto){
-
-        // Verifica se já existe uma organização baseando-se no CNPJ
-        boolean exists = organizationRepository.existsByCnpj(createOrganizationDto.cnpj());
+        boolean exists = organizationRepository.existsByCnpj(organizationCreateRequest.cnpj());
         if (exists){
             throw new OrganizationAlreadyExistsException
-                    ("Organização com CNPJ "+createOrganizationDto.cnpj()+" já existe.");
+                    ("Organização com CNPJ "+ organizationCreateRequest.cnpj()+" já existe.");
         }
 
-        // Cria uma nova organização caso já não exista
         Organization organization =  new Organization();
-        organization.setName(createOrganizationDto.name());
-        organization.setCnpj(createOrganizationDto.cnpj());
-        organization.setLocation(createOrganizationDto.location());
+        organization.setName(organizationCreateRequest.name());
+        organization.setCnpj(organizationCreateRequest.cnpj());
+        organization.setLocation(organizationCreateRequest.location());
 
-        return organizationRepository.save(organization);
+        organizationRepository.save(organization);
+
+        return new OrganizationResponseDto(
+                organization.getId(),
+                organization.getName(),
+                organization.getCnpj(),
+                organization.getLocation(),
+                organization.getCreatedAt()
+        );
     }
 }
