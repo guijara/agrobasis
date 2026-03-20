@@ -8,5 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface OrganizationRepository extends JpaRepository<Organization,UUID> {
-    Optional<Organization> existsOrganizationByCnpj(String cnpj);
+    boolean existsByCnpj(String cnpj);
 }
