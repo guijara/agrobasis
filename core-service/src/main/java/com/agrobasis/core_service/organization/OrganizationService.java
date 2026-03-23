@@ -3,6 +3,9 @@ package com.agrobasis.core_service.organization;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class OrganizationService {
@@ -23,6 +26,19 @@ public class OrganizationService {
         organization.setLocation(organizationCreateRequest.location());
 
         organizationRepository.save(organization);
+
+        return new OrganizationResponseDto(
+                organization.getId(),
+                organization.getName(),
+                organization.getCnpj(),
+                organization.getLocation(),
+                organization.getCreatedAt()
+        );
+    }
+
+    public OrganizationResponseDto getOrganization(UUID id){
+        Organization organization = organizationRepository.findById(id)
+                .orElseThrow(() -> new OrganizationNotFoundException("Organização não encontrada."));
 
         return new OrganizationResponseDto(
                 organization.getId(),

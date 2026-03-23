@@ -17,15 +17,15 @@ public class OrganizationRepositoryTest {
     void shouldSaveOrganizationSuccessfully() {
         // Arrange
         Organization organization = new Organization();
-        organization.setName("Fazenda Santa Maria");
-        organization.setCnpj("12.345.678/0001-90");
-        organization.setLocation("Sorriso - MT");
+        organization.setName("AgroTech");
+        organization.setCnpj("00.000.000/0000-00");
+        organization.setLocation("Cuiabá");
 
         // Act
         Organization savedOrganization = repository.save(organization);
 
         // Assert
         assertThat(savedOrganization.getId()).isNotNull();
-        assertThat(savedOrganization.getName()).isEqualTo("Fazenda Santa Maria");
+        assertThat(savedOrganization.getName()).isEqualTo("AgroTech");
     }
 }

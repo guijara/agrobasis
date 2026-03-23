@@ -33,8 +33,8 @@ class OrganizationControllerTest {
     void shouldCreateOrganizationAndReturn201() throws Exception {
         // Arrange
         String name = "AgroTech";
-        String cnpj = "11.111.111/0001-11";
-        String location = "Sinop - MT";
+        String cnpj = "00.000.000/0000-00";
+        String location = "Cuiabá";
         UUID generatedId = UUID.randomUUID();
 
         OrganizationCreateRequest request = new OrganizationCreateRequest(name, cnpj, location);
@@ -69,8 +69,8 @@ class OrganizationControllerTest {
         // Arrange: Payload obrigatoriamente válido para passar no @Valid
         OrganizationCreateRequest request = new OrganizationCreateRequest(
                 "AgroTech Falha",
-                "99.999.999/0001-99",
-                "Localização Válida"
+                "00.000.000/0000-00",
+                "Cuiabá"
         );
 
         given(organizationService.createOrganization(any(OrganizationCreateRequest.class)))

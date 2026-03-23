@@ -1,6 +1,7 @@
 package com.agrobasis.core_service.config;
 
 import com.agrobasis.core_service.organization.OrganizationAlreadyExistsException;
+import com.agrobasis.core_service.organization.OrganizationNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -24,6 +25,19 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request.getRequestURI(),
                 null // Sem detalhes granulares para este erro
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(OrganizationNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleOrganizationAlreadyExists(OrganizationNotFoundException ex, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI(),
+                null
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }

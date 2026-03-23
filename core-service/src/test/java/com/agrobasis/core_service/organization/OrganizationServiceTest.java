@@ -6,6 +6,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -14,21 +17,19 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class OrganizationServiceTest {
 
-    @Mock // Cria um repositório "de mentira" para o teste
+    @Mock
     private OrganizationRepository organizationRepository;
 
-    @InjectMocks // Injeta o repositório falso dentro do nosso Service
+    @InjectMocks
     private OrganizationService organizationService;
 
     @Test
     void shouldCreateOrganizationSuccessfully() {
         // Arrange
-        OrganizationCreateRequest dto = new OrganizationCreateRequest("Fazenda Nova", "11.222.333/0001-44", "Lucas do Rio Verde - MT");
+        OrganizationCreateRequest dto = new OrganizationCreateRequest("AgroTech", "00.000.000/0000-00", "Cuiabá");
 
-        // Ensinamos o repositório falso a dizer "não existe" quando perguntarem o CNPJ
         when(organizationRepository.existsByCnpj(dto.cnpj())).thenReturn(false);
 
-        // Ensinamos o repositório a devolver a entidade salva
         Organization savedEntity = new Organization();
         savedEntity.setName(dto.name());
         savedEntity.setCnpj(dto.cnpj());
@@ -38,24 +39,62 @@ public class OrganizationServiceTest {
         OrganizationResponseDto result = organizationService.createOrganization(dto);
 
         // Assert
-        assertThat(result.name()).isEqualTo("Fazenda Nova");
+        assertThat(result.name()).isEqualTo("AgroTech");
         verify(organizationRepository, times(1)).save(any(Organization.class));
     }
 
     @Test
     void shouldThrowExceptionWhenCnpjAlreadyExists() {
-        // Arrange (Preparação)
-        OrganizationCreateRequest dto = new OrganizationCreateRequest("Fazenda Duplicada", "11.222.333/0001-44", "Mutum - MT");
+        // Arrange
+        OrganizationCreateRequest dto = new OrganizationCreateRequest("AgroTech", "00.000.000/0000-00", "Cuiabá");
 
-        // Ensinamos o repositório a dizer "SIM, já existe"
         when(organizationRepository.existsByCnpj(dto.cnpj())).thenReturn(true);
 
-        // Act & Assert (Ação e Verificação juntas esperando a falha)
+        // Act & Assert
         assertThatThrownBy(() -> organizationService.createOrganization(dto))
                 .isInstanceOf(OrganizationAlreadyExistsException.class)
-                .hasMessage("Organização com CNPJ 11.222.333/0001-44 já existe.");
+                .hasMessage("Organização com CNPJ 00.000.000/0000-00 já existe.");
 
-        // Garante que o sistema NUNCA chamou o método save() do banco
         verify(organizationRepository, never()).save(any(Organization.class));
+    }
+
+    @Test
+    void shouldReturnOrganizationWhenIdExists() {
+        // Arrange
+        UUID id = UUID.randomUUID();
+        Organization organization = new Organization();
+        organization.setId(id);
+        organization.setName("AgroTech");
+        organization.setCnpj("00.000.000/0000-00");
+        organization.setLocation("Cuiabá");
+
+        when(organizationRepository.findById(id)).thenReturn(Optional.of(organization));
+
+        // Act
+        OrganizationResponseDto result = organizationService.getOrganization(id);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(id);
+        assertThat(result.name()).isEqualTo("AgroTech");
+        assertThat(result.cnpj()).isEqualTo("00.000.000/0000-00");
+        assertThat(result.location()).isEqualTo("Cuiabá");
+
+        verify(organizationRepository, times(1)).findById(id);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenIdDoesNotExist() {
+        // Arrange
+        UUID id = UUID.randomUUID();
+
+        when(organizationRepository.findById(id)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> organizationService.getOrganization(id))
+                .isInstanceOf(OrganizationNotFoundException.class)
+                .hasMessage("Organização não encontrada.");
+
+        verify(organizationRepository, times(1)).findById(id);
     }
 }
