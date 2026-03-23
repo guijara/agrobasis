@@ -30,16 +30,17 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(OrganizationNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleOrganizationAlreadyExists(OrganizationNotFoundException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleOrganizationNotFound(OrganizationNotFoundException ex, HttpServletRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
-                HttpStatus.CONFLICT.value(),
-                HttpStatus.CONFLICT.getReasonPhrase(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
                 ex.getMessage(),
                 request.getRequestURI(),
                 null
         );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        // CORRIGIDO: O status do retorno agora é NOT_FOUND
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
     // Trata falhas de validação de DTO (Bad Request 400)

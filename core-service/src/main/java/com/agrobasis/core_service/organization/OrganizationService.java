@@ -1,6 +1,8 @@
 package com.agrobasis.core_service.organization;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -47,5 +49,16 @@ public class OrganizationService {
                 organization.getLocation(),
                 organization.getCreatedAt()
         );
+    }
+
+    public Page<OrganizationResponseDto> getAllOrganizations(Pageable pageable) {
+        return organizationRepository.findAll(pageable)
+                .map(org -> new OrganizationResponseDto(
+                        org.getId(),
+                        org.getName(),
+                        org.getCnpj(),
+                        org.getLocation(),
+                        org.getCreatedAt()
+                ));
     }
 }

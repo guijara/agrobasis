@@ -11,5 +11,4 @@ import java.util.UUID;
 public interface OrganizationRepository extends JpaRepository<Organization,UUID> {
     boolean existsByCnpj(String cnpj);
 
-    Optional<Organization> getOrganizationById(UUID id);
 }

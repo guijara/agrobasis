@@ -3,12 +3,13 @@ package com.agrobasis.core_service.organization;
 import com.agrobasis.core_service.config.ErrorResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,6 +17,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/organization")
@@ -36,5 +39,16 @@ public class OrganizationController {
     public ResponseEntity<OrganizationResponseDto> createOrganization(@Valid @RequestBody OrganizationCreateRequest dto){
         OrganizationResponseDto organization = organizationService.createOrganization(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(organization);
+    }
+
+    @Operation(summary = "Lista organizações paginadas", description = "Retorna uma página de organizações com suporte a ordenação.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista recuperada com sucesso")
+    })
+    @GetMapping
+    public ResponseEntity<Page<OrganizationResponseDto>> getAllOrganizations(
+            @ParameterObject @PageableDefault(size = 10, sort = "name") Pageable pageable) {
+        Page<OrganizationResponseDto> organizations = organizationService.getAllOrganizations(pageable);
+        return ResponseEntity.ok(organizations);
     }
 }
