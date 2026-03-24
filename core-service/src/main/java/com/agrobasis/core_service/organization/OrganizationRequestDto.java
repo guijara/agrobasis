@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
-public record OrganizationCreateRequest(
+public record OrganizationRequestDto(
         @NotBlank(message = "O nome da organização não pode estar vazio")
         @Schema(description = "Nome da Organização.", example = "AgroTech") String name,
         @NotBlank(message = "O CNPJ é obrigatório")

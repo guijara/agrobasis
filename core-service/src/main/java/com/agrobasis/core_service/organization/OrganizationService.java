@@ -5,7 +5,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -14,18 +13,18 @@ public class OrganizationService {
 
     private final OrganizationRepository organizationRepository;
 
-    public OrganizationResponseDto createOrganization(OrganizationCreateRequest organizationCreateRequest){
+    public OrganizationResponseDto createOrganization(OrganizationRequestDto organizationRequestDto){
 
-        boolean exists = organizationRepository.existsByCnpj(organizationCreateRequest.cnpj());
+        boolean exists = organizationRepository.existsByCnpj(organizationRequestDto.cnpj());
         if (exists){
             throw new OrganizationAlreadyExistsException
-                    ("Organização com CNPJ "+ organizationCreateRequest.cnpj()+" já existe.");
+                    ("Organização com CNPJ "+ organizationRequestDto.cnpj()+" já existe.");
         }
 
         Organization organization =  new Organization();
-        organization.setName(organizationCreateRequest.name());
-        organization.setCnpj(organizationCreateRequest.cnpj());
-        organization.setLocation(organizationCreateRequest.location());
+        organization.setName(organizationRequestDto.name());
+        organization.setCnpj(organizationRequestDto.cnpj());
+        organization.setLocation(organizationRequestDto.location());
 
         organizationRepository.save(organization);
 

@@ -18,8 +18,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/organization")
 @RequiredArgsConstructor
@@ -36,7 +34,7 @@ public class OrganizationController {
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping()
-    public ResponseEntity<OrganizationResponseDto> createOrganization(@Valid @RequestBody OrganizationCreateRequest dto){
+    public ResponseEntity<OrganizationResponseDto> createOrganization(@Valid @RequestBody OrganizationRequestDto dto){
         OrganizationResponseDto organization = organizationService.createOrganization(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(organization);
     }

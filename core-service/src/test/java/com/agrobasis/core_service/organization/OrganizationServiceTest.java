@@ -26,7 +26,7 @@ public class OrganizationServiceTest {
     @Test
     void shouldCreateOrganizationSuccessfully() {
         // Arrange
-        OrganizationCreateRequest dto = new OrganizationCreateRequest("AgroTech", "00.000.000/0000-00", "Cuiabá");
+        OrganizationRequestDto dto = new OrganizationRequestDto("AgroTech", "00.000.000/0000-00", "Cuiabá");
 
         when(organizationRepository.existsByCnpj(dto.cnpj())).thenReturn(false);
 
@@ -46,7 +46,7 @@ public class OrganizationServiceTest {
     @Test
     void shouldThrowExceptionWhenCnpjAlreadyExists() {
         // Arrange
-        OrganizationCreateRequest dto = new OrganizationCreateRequest("AgroTech", "00.000.000/0000-00", "Cuiabá");
+        OrganizationRequestDto dto = new OrganizationRequestDto("AgroTech", "00.000.000/0000-00", "Cuiabá");
 
         when(organizationRepository.existsByCnpj(dto.cnpj())).thenReturn(true);
 

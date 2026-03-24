@@ -43,12 +43,12 @@ class OrganizationControllerTest {
         String location = "Cuiabá";
         UUID generatedId = UUID.randomUUID();
 
-        OrganizationCreateRequest request = new OrganizationCreateRequest(name, cnpj, location);
+        OrganizationRequestDto request = new OrganizationRequestDto(name, cnpj, location);
         OrganizationResponseDto response = new OrganizationResponseDto(
                 generatedId, name, cnpj, location, LocalDateTime.now()
         );
 
-        given(organizationService.createOrganization(any(OrganizationCreateRequest.class)))
+        given(organizationService.createOrganization(any(OrganizationRequestDto.class)))
                 .willReturn(response);
 
         // Act & Assert
@@ -69,7 +69,7 @@ class OrganizationControllerTest {
     @DisplayName("Should return 400 when request body is invalid")
     void shouldReturn400WhenRequestBodyIsInvalid() {
         // Arrange: Criamos um DTO propositalmente vazio para falhar no @Valid
-        OrganizationCreateRequest invalidRequest = new OrganizationCreateRequest("", "", "");
+        OrganizationRequestDto invalidRequest = new OrganizationRequestDto("", "", "");
 
         // Act & Assert
         assertThat(
@@ -84,9 +84,9 @@ class OrganizationControllerTest {
     @DisplayName("Should return 500 when service throws unexpected exception")
     void shouldReturn500WhenServiceThrowsException() {
         // Arrange
-        OrganizationCreateRequest request = new OrganizationCreateRequest("AgroTech", "00.000.000/0000-00", "Cuiabá");
+        OrganizationRequestDto request = new OrganizationRequestDto("AgroTech", "00.000.000/0000-00", "Cuiabá");
 
-        given(organizationService.createOrganization(any(OrganizationCreateRequest.class)))
+        given(organizationService.createOrganization(any(OrganizationRequestDto.class)))
                 .willThrow(new RuntimeException("Unexpected error"));
 
         // Act & Assert
