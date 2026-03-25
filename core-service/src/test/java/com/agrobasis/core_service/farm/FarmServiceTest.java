@@ -50,7 +50,6 @@ class FarmServiceTest {
         savedFarm.setHectareArea(request.hectareArea());
         savedFarm.setOrganization(mockOrg);
 
-        // Ensinamos o repositório a salvar a fazenda
         when(farmRepository.save(any(Farm.class))).thenReturn(savedFarm);
 
         // Act
@@ -74,7 +73,6 @@ class FarmServiceTest {
         UUID invalidOrgId = UUID.randomUUID();
         FarmRequestDto request = new FarmRequestDto("Fazenda", "Cuiabá", 1500.50, invalidOrgId);
 
-        // Ensinamos o repositório que a organização NÃO existe
         when(organizationRepository.findById(invalidOrgId)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -82,7 +80,6 @@ class FarmServiceTest {
                 .isInstanceOf(OrganizationNotFoundException.class)
                 .hasMessage("Organização não encontrada.");
 
-        // Garantimos que o sistema barrou a operação e NUNCA chamou o save()
         verify(organizationRepository, times(1)).findById(invalidOrgId);
         verify(farmRepository, never()).save(any(Farm.class));
     }
