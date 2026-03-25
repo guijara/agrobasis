@@ -4,9 +4,13 @@ import com.agrobasis.core_service.organization.Organization;
 import com.agrobasis.core_service.organization.OrganizationNotFoundException;
 import com.agrobasis.core_service.organization.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,5 +40,33 @@ public class FarmService {
                 farm.getHectareArea(),
                 farm.getOrganization().getId()
         );
+    }
+
+    public FarmResponseDto getFarmById(UUID id) {
+
+
+
+        Farm farm = farmRepository.findById(id).orElseThrow(() -> new FarmNotFoundException("Fazenda não encontrada."));
+
+        return new FarmResponseDto(
+                farm.getId(),
+                farm.getName(),
+                farm.getLocation(),
+                farm.getHectareArea(),
+                farm.getOrganization().getId()
+        );
+    }
+
+    public Page<FarmResponseDto> getAllFarmsByOrganization(UUID organizationId, PageRequest pageRequest) {
+
+        Page<Farm> farms = farmRepository.findAllByOrganizationId(organizationId,pageRequest);
+
+        return farms.map(Farm -> new FarmResponseDto(
+                Farm.getId(),
+                Farm.getName(),
+                Farm.getLocation(),
+                Farm.getHectareArea(),
+                Farm.getOrganization().getId()
+        ));
     }
 }

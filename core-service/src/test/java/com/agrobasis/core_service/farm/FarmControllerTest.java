@@ -6,16 +6,22 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @WebMvcTest(FarmController.class)
@@ -89,5 +95,68 @@ class FarmControllerTest {
                         .content(jsonMapper.writeValueAsString(invalidRequest))
         )
                 .hasStatus(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    @DisplayName("Should return 200 and FarmResponseDto when valid ID is provided")
+    void shouldReturn200WhenFarmIsFound() {
+        // Arrange
+        UUID farmId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
+        FarmResponseDto response = new FarmResponseDto(farmId, "Fazenda", "Cuiabá", 1500.50, orgId);
+
+        given(farmService.getFarmById(farmId)).willReturn(response);
+
+        // Act & Assert
+        assertThat(
+                mockMvc.get().uri("/api/farm/{id}", farmId)
+                        .accept(MediaType.APPLICATION_JSON)
+        )
+                .hasStatus(HttpStatus.OK)
+                .bodyJson()
+                .hasPathSatisfying("$.name", v -> assertThat(v).isEqualTo("Fazenda"));
+    }
+
+    @Test
+    @DisplayName("Should return 404 when farm ID does not exist")
+    void shouldReturn404WhenFarmIsNotFound() {
+        // Arrange
+        UUID invalidId = UUID.randomUUID();
+
+        given(farmService.getFarmById(invalidId))
+                .willThrow(new FarmNotFoundException("Fazenda não encontrada."));
+
+        // Act & Assert
+        assertThat(
+                mockMvc.get().uri("/api/farm/{id}", invalidId)
+                        .accept(MediaType.APPLICATION_JSON)
+        )
+                .hasStatus(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("Should return 200 and a page of farms by organization")
+    void shouldReturn200AndPageOfFarms() {
+        // Arrange
+        UUID orgId = UUID.randomUUID();
+        FarmResponseDto dto = new FarmResponseDto(UUID.randomUUID(), "Fazenda Santa Cruz", "Sinop", 2000.0, orgId);
+
+        Page<FarmResponseDto> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 10), 1);
+
+        given(farmService.getAllFarmsByOrganization(eq(orgId), any(Pageable.class))).willReturn(page);
+
+        // Act & Assert
+        assertThat(
+                mockMvc.get().uri("/api/farm")
+                        .param("organizationId", orgId.toString()) // Passando o filtro na URL
+                        .param("page", "0")
+                        .param("size", "10")
+                        .accept(MediaType.APPLICATION_JSON)
+        )
+                .hasStatus(HttpStatus.OK)
+                .bodyJson()
+                // Acessa o array "content" que o Spring Page gera no JSON
+                .hasPathSatisfying("$.content[0].name", v -> assertThat(v).isEqualTo("Fazenda Santa Cruz"))
+                .hasPathSatisfying("$.totalElements", v -> assertThat(v).isEqualTo(1));
     }
 }
