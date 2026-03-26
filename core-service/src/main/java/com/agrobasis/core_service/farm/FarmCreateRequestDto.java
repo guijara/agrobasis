@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Positive;
 
 import java.util.UUID;
 
-public record FarmRequestDto(@NotBlank(message = "O nome da fazenda é obrigatório")
+public record FarmCreateRequestDto(@NotBlank(message = "O nome da fazenda é obrigatório")
              String name,
              @NotBlank(message = "A localização da fazenda é obrigatória")
              String location,

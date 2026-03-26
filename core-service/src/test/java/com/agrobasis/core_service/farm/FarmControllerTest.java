@@ -43,10 +43,10 @@ class FarmControllerTest {
         UUID orgId = UUID.randomUUID();
         UUID farmId = UUID.randomUUID();
 
-        FarmRequestDto request = new FarmRequestDto("Fazenda", "Cuiabá", 1500.50, orgId);
+        FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, orgId);
         FarmResponseDto response = new FarmResponseDto(farmId, "Fazenda", "Cuiabá", 1500.50, orgId);
 
-        given(farmService.createFarm(any(FarmRequestDto.class))).willReturn(response);
+        given(farmService.createFarm(any(FarmCreateRequestDto.class))).willReturn(response);
 
         // Act & Assert
         assertThat(
@@ -68,9 +68,9 @@ class FarmControllerTest {
     void shouldReturn404WhenOrganizationIsNotFound() {
         // Arrange
         UUID invalidOrgId = UUID.randomUUID();
-        FarmRequestDto request = new FarmRequestDto("Fazenda", "Cuiabá", 1500.50, invalidOrgId);
+        FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, invalidOrgId);
 
-        given(farmService.createFarm(any(FarmRequestDto.class)))
+        given(farmService.createFarm(any(FarmCreateRequestDto.class)))
                 .willThrow(new OrganizationNotFoundException("Organização não encontrada."));
 
         // Act & Assert
@@ -86,7 +86,7 @@ class FarmControllerTest {
     @DisplayName("Should return 400 when request body is invalid")
     void shouldReturn400WhenRequestBodyIsInvalid() {
         // Arrange
-        FarmRequestDto invalidRequest = new FarmRequestDto("", "", -10.0, null);
+        FarmCreateRequestDto invalidRequest = new FarmCreateRequestDto("", "", -10.0, null);
 
         // Act & Assert
         assertThat(

@@ -32,7 +32,7 @@ public class FarmController {
             @ApiResponse(responseCode = "404", description = "Organização dona não encontrada", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping
-    public ResponseEntity<FarmResponseDto> postFarm(@Valid @RequestBody FarmRequestDto request){
+    public ResponseEntity<FarmResponseDto> postFarm(@Valid @RequestBody FarmCreateRequestDto request){
         FarmResponseDto response = farmService.createFarm(request);
         return ResponseEntity.status(HttpStatusCode.valueOf(201)).body(response);
     }

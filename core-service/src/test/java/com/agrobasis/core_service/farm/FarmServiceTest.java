@@ -40,7 +40,7 @@ class FarmServiceTest {
     void shouldCreateFarmSuccessfully() {
         // Arrange
         UUID orgId = UUID.randomUUID();
-        FarmRequestDto request = new FarmRequestDto("Fazenda", "Cuiabá", 1500.50, orgId);
+        FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, orgId);
 
         Organization mockOrg = new Organization();
         mockOrg.setId(orgId);
@@ -76,7 +76,7 @@ class FarmServiceTest {
     void shouldThrowExceptionWhenOrganizationDoesNotExist() {
         // Arrange
         UUID invalidOrgId = UUID.randomUUID();
-        FarmRequestDto request = new FarmRequestDto("Fazenda", "Cuiabá", 1500.50, invalidOrgId);
+        FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, invalidOrgId);
 
         when(organizationRepository.findById(invalidOrgId)).thenReturn(Optional.empty());
 
@@ -165,5 +165,65 @@ class FarmServiceTest {
         assertThat(result.getContent().get(0).name()).isEqualTo("Fazenda");
 
         verify(farmRepository, times(1)).findAllByOrganizationId(eq(orgId), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("Should update farm successfully when ID exists")
+    void shouldUpdateFarmSuccessfully() {
+        // Arrange
+        UUID farmId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
+
+        // Dados antigos no banco
+        Organization mockOrg = new Organization();
+        mockOrg.setId(orgId);
+
+        Farm existingFarm = new Farm();
+        existingFarm.setId(farmId);
+        existingFarm.setName("Fazenda Velha");
+        existingFarm.setLocation("Cuiabá");
+        existingFarm.setHectareArea(1000.0);
+        existingFarm.setOrganization(mockOrg);
+
+        // Novos dados chegando no PUT
+        FarmUpdateRequestDto updateRequest = new FarmUpdateRequestDto("Fazenda Nova", "Sinop", 2000.0);
+
+        when(farmRepository.findById(farmId)).thenReturn(Optional.of(existingFarm));
+
+        // O Hibernate salva a mesma instância atualizada
+        when(farmRepository.save(any(Farm.class))).thenReturn(existingFarm);
+
+        // Act
+        FarmResponseDto result = farmService.updateFarm(farmId, updateRequest);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(farmId);
+        assertThat(result.name()).isEqualTo("Fazenda Nova"); // Validando a alteração
+        assertThat(result.location()).isEqualTo("Sinop");
+        assertThat(result.hectareArea()).isEqualTo(2000.0);
+        assertThat(result.organizationId()).isEqualTo(orgId); // Organização se mantém intacta
+
+        verify(farmRepository, times(1)).findById(farmId);
+        verify(farmRepository, times(1)).save(existingFarm);
+    }
+
+    @Test
+    @DisplayName("Should throw FarmNotFoundException when updating non-existent farm")
+    void shouldThrowExceptionWhenUpdatingInvalidFarm() {
+        // Arrange
+        UUID invalidId = UUID.randomUUID();
+        FarmUpdateRequestDto updateRequest = new FarmUpdateRequestDto("Fazenda Nova", "Sinop", 2000.0);
+
+        when(farmRepository.findById(invalidId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> farmService.updateFarm(invalidId, updateRequest))
+                .isInstanceOf(FarmNotFoundException.class)
+                .hasMessage("Fazenda não encontrada.");
+
+        // Garante que não tentou salvar nada no banco
+        verify(farmRepository, times(1)).findById(invalidId);
+        verify(farmRepository, never()).save(any(Farm.class));
     }
 }
