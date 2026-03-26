@@ -4,6 +4,7 @@ import com.agrobasis.core_service.organization.Organization;
 import com.agrobasis.core_service.organization.OrganizationNotFoundException;
 import com.agrobasis.core_service.organization.OrganizationRepository;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,191 +36,211 @@ class FarmServiceTest {
     @InjectMocks
     private FarmService farmService;
 
-    @Test
-    @DisplayName("Should create farm successfully when organization exists")
-    void shouldCreateFarmSuccessfully() {
-        // Arrange
-        UUID orgId = UUID.randomUUID();
-        FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, orgId);
+    @Nested
+    @DisplayName("createFarm()")
+    class CreateFarmTests {
 
-        Organization mockOrg = new Organization();
-        mockOrg.setId(orgId);
-        mockOrg.setName("AgroTech");
+        @Test
+        @DisplayName("Should create farm successfully when organization exists")
+        void shouldCreateFarmSuccessfully() {
+            // Arrange
+            UUID orgId = UUID.randomUUID();
+            FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, orgId);
 
-        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(mockOrg));
+            Organization mockOrg = new Organization();
+            mockOrg.setId(orgId);
+            mockOrg.setName("AgroTech");
 
-        Farm savedFarm = new Farm();
-        savedFarm.setId(UUID.randomUUID());
-        savedFarm.setName(request.name());
-        savedFarm.setLocation(request.location());
-        savedFarm.setHectareArea(request.hectareArea());
-        savedFarm.setOrganization(mockOrg);
+            when(organizationRepository.findById(orgId)).thenReturn(Optional.of(mockOrg));
 
-        when(farmRepository.save(any(Farm.class))).thenReturn(savedFarm);
+            Farm savedFarm = new Farm();
+            savedFarm.setId(UUID.randomUUID());
+            savedFarm.setName(request.name());
+            savedFarm.setLocation(request.location());
+            savedFarm.setHectareArea(request.hectareArea());
+            savedFarm.setOrganization(mockOrg);
 
-        // Act
-        FarmResponseDto result = farmService.createFarm(request);
+            when(farmRepository.save(any(Farm.class))).thenReturn(savedFarm);
 
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.name()).isEqualTo("Fazenda");
-        assertThat(result.location()).isEqualTo("Cuiabá");
-        assertThat(result.hectareArea()).isEqualTo(1500.50);
-        assertThat(result.organizationId()).isEqualTo(orgId);
+            // Act
+            FarmResponseDto result = farmService.createFarm(request);
 
-        verify(organizationRepository, times(1)).findById(orgId);
-        verify(farmRepository, times(1)).save(any(Farm.class));
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.name()).isEqualTo("Fazenda");
+            assertThat(result.location()).isEqualTo("Cuiabá");
+            assertThat(result.hectareArea()).isEqualTo(1500.50);
+            assertThat(result.organizationId()).isEqualTo(orgId);
+
+            verify(organizationRepository, times(1)).findById(orgId);
+            verify(farmRepository, times(1)).save(any(Farm.class));
+        }
+
+        @Test
+        @DisplayName("Should throw OrganizationNotFoundException when creating farm for invalid organization")
+        void shouldThrowExceptionWhenOrganizationDoesNotExist() {
+            // Arrange
+            UUID invalidOrgId = UUID.randomUUID();
+            FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, invalidOrgId);
+
+            when(organizationRepository.findById(invalidOrgId)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThatThrownBy(() -> farmService.createFarm(request))
+                    .isInstanceOf(OrganizationNotFoundException.class)
+                    .hasMessage("Organização não encontrada.");
+
+            verify(organizationRepository, times(1)).findById(invalidOrgId);
+            verify(farmRepository, never()).save(any(Farm.class));
+        }
     }
 
-    @Test
-    @DisplayName("Should throw OrganizationNotFoundException when creating farm for invalid organization")
-    void shouldThrowExceptionWhenOrganizationDoesNotExist() {
-        // Arrange
-        UUID invalidOrgId = UUID.randomUUID();
-        FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, invalidOrgId);
+    @Nested
+    @DisplayName("getFarmById()")
+    class GetFarmByIdTests {
 
-        when(organizationRepository.findById(invalidOrgId)).thenReturn(Optional.empty());
+        @Test
+        @DisplayName("Should return FarmResponseDto when valid ID is provided")
+        void shouldReturnFarmWhenIdExists() {
+            // Arrange
+            UUID farmId = UUID.randomUUID();
+            UUID orgId = UUID.randomUUID();
 
-        // Act & Assert
-        assertThatThrownBy(() -> farmService.createFarm(request))
-                .isInstanceOf(OrganizationNotFoundException.class)
-                .hasMessage("Organização não encontrada.");
+            Organization mockOrg = new Organization();
+            mockOrg.setId(orgId);
 
-        verify(organizationRepository, times(1)).findById(invalidOrgId);
-        verify(farmRepository, never()).save(any(Farm.class));
+            Farm mockFarm = new Farm();
+            mockFarm.setId(farmId);
+            mockFarm.setName("Fazenda");
+            mockFarm.setLocation("Cuiabá");
+            mockFarm.setHectareArea(1500.50);
+            mockFarm.setOrganization(mockOrg);
+
+            when(farmRepository.findById(farmId)).thenReturn(Optional.of(mockFarm));
+
+            // Act
+            FarmResponseDto result = farmService.getFarmById(farmId);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.id()).isEqualTo(farmId);
+            assertThat(result.name()).isEqualTo("Fazenda");
+            assertThat(result.organizationId()).isEqualTo(orgId);
+
+            verify(farmRepository, times(1)).findById(farmId);
+        }
+
+        @Test
+        @DisplayName("Should throw FarmNotFoundException when farm ID does not exist")
+        void shouldThrowExceptionWhenFarmDoesNotExist() {
+            // Arrange
+            UUID invalidId = UUID.randomUUID();
+            when(farmRepository.findById(invalidId)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThatThrownBy(() -> farmService.getFarmById(invalidId))
+                    .isInstanceOf(FarmNotFoundException.class)
+                    .hasMessage("Fazenda não encontrada.");
+
+            verify(farmRepository, times(1)).findById(invalidId);
+        }
     }
 
-    @Test
-    @DisplayName("Should return FarmResponseDto when valid ID is provided")
-    void shouldReturnFarmWhenIdExists() {
-        // Arrange
-        UUID farmId = UUID.randomUUID();
-        UUID orgId = UUID.randomUUID();
+    @Nested
+    @DisplayName("getAllFarmsByOrganization()")
+    class GetAllFarmsByOrganizationTests {
 
-        Organization mockOrg = new Organization();
-        mockOrg.setId(orgId);
+        @Test
+        @DisplayName("Should return paginated list of farms for a specific organization")
+        void shouldReturnPaginatedFarmsByOrganization() {
+            // Arrange
+            UUID orgId = UUID.randomUUID();
+            PageRequest pageRequest = PageRequest.of(0, 10);
 
-        Farm mockFarm = new Farm();
-        mockFarm.setId(farmId);
-        mockFarm.setName("Fazenda");
-        mockFarm.setLocation("Cuiabá");
-        mockFarm.setHectareArea(1500.50);
-        mockFarm.setOrganization(mockOrg);
+            Organization mockOrg = new Organization();
+            mockOrg.setId(orgId);
 
-        when(farmRepository.findById(farmId)).thenReturn(Optional.of(mockFarm));
+            Farm mockFarm = new Farm();
+            mockFarm.setId(UUID.randomUUID());
+            mockFarm.setName("Fazenda");
+            mockFarm.setLocation("Cuiabá");
+            mockFarm.setHectareArea(1500.50);
+            mockFarm.setOrganization(mockOrg);
 
-        // Act
-        FarmResponseDto result = farmService.getFarmById(farmId);
+            Page<Farm> pagedFarms = new PageImpl<>(List.of(mockFarm), pageRequest, 1);
 
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(farmId);
-        assertThat(result.name()).isEqualTo("Fazenda");
-        assertThat(result.organizationId()).isEqualTo(orgId);
+            when(farmRepository.findAllByOrganizationId(eq(orgId), any(Pageable.class))).thenReturn(pagedFarms);
 
-        verify(farmRepository, times(1)).findById(farmId);
+            // Act
+            Page<FarmResponseDto> result = farmService.getAllFarmsByOrganization(orgId, pageRequest);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getTotalElements()).isEqualTo(1);
+            assertThat(result.getContent().get(0).name()).isEqualTo("Fazenda");
+
+            verify(farmRepository, times(1)).findAllByOrganizationId(eq(orgId), any(Pageable.class));
+        }
     }
 
-    @Test
-    @DisplayName("Should throw FarmNotFoundException when farm ID does not exist")
-    void shouldThrowExceptionWhenFarmDoesNotExist() {
-        // Arrange
-        UUID invalidId = UUID.randomUUID();
-        when(farmRepository.findById(invalidId)).thenReturn(Optional.empty());
+    @Nested
+    @DisplayName("updateFarm()")
+    class UpdateFarmTests {
 
-        // Act & Assert
-        assertThatThrownBy(() -> farmService.getFarmById(invalidId))
-                .isInstanceOf(FarmNotFoundException.class)
-                .hasMessage("Fazenda não encontrada.");
+        @Test
+        @DisplayName("Should update farm successfully when ID exists")
+        void shouldUpdateFarmSuccessfully() {
+            // Arrange
+            UUID farmId = UUID.randomUUID();
+            UUID orgId = UUID.randomUUID();
 
-        verify(farmRepository, times(1)).findById(invalidId);
-    }
+            Organization mockOrg = new Organization();
+            mockOrg.setId(orgId);
 
-    @Test
-    @DisplayName("Should return paginated list of farms for a specific organization")
-    void shouldReturnPaginatedFarmsByOrganization() {
-        // Arrange
-        UUID orgId = UUID.randomUUID();
-        PageRequest pageRequest = PageRequest.of(0, 10);
+            Farm existingFarm = new Farm();
+            existingFarm.setId(farmId);
+            existingFarm.setName("Fazenda Velha");
+            existingFarm.setLocation("Cuiabá");
+            existingFarm.setHectareArea(1000.0);
+            existingFarm.setOrganization(mockOrg);
 
-        Organization mockOrg = new Organization();
-        mockOrg.setId(orgId);
+            FarmUpdateRequestDto updateRequest = new FarmUpdateRequestDto("Fazenda Nova", "Sinop", 2000.0);
 
-        Farm mockFarm = new Farm();
-        mockFarm.setId(UUID.randomUUID());
-        mockFarm.setName("Fazenda");
-        mockFarm.setLocation("Cuiabá");
-        mockFarm.setHectareArea(1500.50);
-        mockFarm.setOrganization(mockOrg);
+            when(farmRepository.findById(farmId)).thenReturn(Optional.of(existingFarm));
 
-        Page<Farm> pagedFarms = new PageImpl<>(List.of(mockFarm), pageRequest, 1);
+            when(farmRepository.save(any(Farm.class))).thenReturn(existingFarm);
 
-        when(farmRepository.findAllByOrganizationId(eq(orgId), any(Pageable.class))).thenReturn(pagedFarms);
+            // Act
+            FarmResponseDto result = farmService.updateFarm(farmId, updateRequest);
 
-        // Act
-        Page<FarmResponseDto> result = farmService.getAllFarmsByOrganization(orgId, pageRequest);
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.id()).isEqualTo(farmId);
+            assertThat(result.name()).isEqualTo("Fazenda Nova"); // Validando a alteração
+            assertThat(result.location()).isEqualTo("Sinop");
+            assertThat(result.hectareArea()).isEqualTo(2000.0);
+            assertThat(result.organizationId()).isEqualTo(orgId); // Organização se mantém intacta
 
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getTotalElements()).isEqualTo(1);
-        assertThat(result.getContent().get(0).name()).isEqualTo("Fazenda");
+            verify(farmRepository, times(1)).findById(farmId);
+            verify(farmRepository, times(1)).save(existingFarm);
+        }
 
-        verify(farmRepository, times(1)).findAllByOrganizationId(eq(orgId), any(Pageable.class));
-    }
+        @Test
+        @DisplayName("Should throw FarmNotFoundException when updating non-existent farm")
+        void shouldThrowExceptionWhenUpdatingInvalidFarm() {
+            // Arrange
+            UUID invalidId = UUID.randomUUID();
+            FarmUpdateRequestDto updateRequest = new FarmUpdateRequestDto("Fazenda Nova", "Sinop", 2000.0);
 
-    @Test
-    @DisplayName("Should update farm successfully when ID exists")
-    void shouldUpdateFarmSuccessfully() {
-        // Arrange
-        UUID farmId = UUID.randomUUID();
-        UUID orgId = UUID.randomUUID();
+            when(farmRepository.findById(invalidId)).thenReturn(Optional.empty());
 
-        Organization mockOrg = new Organization();
-        mockOrg.setId(orgId);
+            // Act & Assert
+            assertThatThrownBy(() -> farmService.updateFarm(invalidId, updateRequest))
+                    .isInstanceOf(FarmNotFoundException.class)
+                    .hasMessage("Fazenda não encontrada.");
 
-        Farm existingFarm = new Farm();
-        existingFarm.setId(farmId);
-        existingFarm.setName("Fazenda Velha");
-        existingFarm.setLocation("Cuiabá");
-        existingFarm.setHectareArea(1000.0);
-        existingFarm.setOrganization(mockOrg);
-
-        FarmUpdateRequestDto updateRequest = new FarmUpdateRequestDto("Fazenda Nova", "Sinop", 2000.0);
-
-        when(farmRepository.findById(farmId)).thenReturn(Optional.of(existingFarm));
-
-        when(farmRepository.save(any(Farm.class))).thenReturn(existingFarm);
-
-        // Act
-        FarmResponseDto result = farmService.updateFarm(farmId, updateRequest);
-
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(farmId);
-        assertThat(result.name()).isEqualTo("Fazenda Nova"); // Validando a alteração
-        assertThat(result.location()).isEqualTo("Sinop");
-        assertThat(result.hectareArea()).isEqualTo(2000.0);
-        assertThat(result.organizationId()).isEqualTo(orgId); // Organização se mantém intacta
-
-        verify(farmRepository, times(1)).findById(farmId);
-        verify(farmRepository, times(1)).save(existingFarm);
-    }
-
-    @Test
-    @DisplayName("Should throw FarmNotFoundException when updating non-existent farm")
-    void shouldThrowExceptionWhenUpdatingInvalidFarm() {
-        // Arrange
-        UUID invalidId = UUID.randomUUID();
-        FarmUpdateRequestDto updateRequest = new FarmUpdateRequestDto("Fazenda Nova", "Sinop", 2000.0);
-
-        when(farmRepository.findById(invalidId)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThatThrownBy(() -> farmService.updateFarm(invalidId, updateRequest))
-                .isInstanceOf(FarmNotFoundException.class)
-                .hasMessage("Fazenda não encontrada.");
-
-        verify(farmRepository, times(1)).findById(invalidId);
-        verify(farmRepository, never()).save(any(Farm.class));
+            verify(farmRepository, times(1)).findById(invalidId);
+            verify(farmRepository, never()).save(any(Farm.class));
+        }
     }
 }
