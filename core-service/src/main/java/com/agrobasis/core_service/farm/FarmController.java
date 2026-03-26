@@ -42,9 +42,9 @@ public class FarmController {
             @ApiResponse(responseCode = "200", description = "Fazenda encontrada"),
             @ApiResponse(responseCode = "404", description = "Fazenda não encontrada")
     })
-    @GetMapping("/{organizationId}")
-    public ResponseEntity<FarmResponseDto> getFarm(@PathVariable UUID organizationId){
-        FarmResponseDto farm = farmService.getFarmById(organizationId);
+    @GetMapping("/{id}")
+    public ResponseEntity<FarmResponseDto> getFarm(@PathVariable UUID id){
+        FarmResponseDto farm = farmService.getFarmById(id);
         return ResponseEntity.ok(farm);
     }
 
