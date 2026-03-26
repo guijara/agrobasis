@@ -174,7 +174,6 @@ class FarmServiceTest {
         UUID farmId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
 
-        // Dados antigos no banco
         Organization mockOrg = new Organization();
         mockOrg.setId(orgId);
 
@@ -185,12 +184,10 @@ class FarmServiceTest {
         existingFarm.setHectareArea(1000.0);
         existingFarm.setOrganization(mockOrg);
 
-        // Novos dados chegando no PUT
         FarmUpdateRequestDto updateRequest = new FarmUpdateRequestDto("Fazenda Nova", "Sinop", 2000.0);
 
         when(farmRepository.findById(farmId)).thenReturn(Optional.of(existingFarm));
 
-        // O Hibernate salva a mesma instância atualizada
         when(farmRepository.save(any(Farm.class))).thenReturn(existingFarm);
 
         // Act
@@ -222,7 +219,6 @@ class FarmServiceTest {
                 .isInstanceOf(FarmNotFoundException.class)
                 .hasMessage("Fazenda não encontrada.");
 
-        // Garante que não tentou salvar nada no banco
         verify(farmRepository, times(1)).findById(invalidId);
         verify(farmRepository, never()).save(any(Farm.class));
     }

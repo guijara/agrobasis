@@ -159,4 +159,64 @@ class FarmControllerTest {
                 .hasPathSatisfying("$.content[0].name", v -> assertThat(v).isEqualTo("Fazenda Santa Cruz"))
                 .hasPathSatisfying("$.totalElements", v -> assertThat(v).isEqualTo(1));
     }
+
+    @Test
+    @DisplayName("Should update farm and return 200")
+    void shouldUpdateFarmAndReturn200() {
+        // Arrange
+        UUID farmId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
+
+        FarmUpdateRequestDto request = new FarmUpdateRequestDto("Fazenda Atualizada", "Sinop", 2500.0);
+        FarmResponseDto response = new FarmResponseDto(farmId, "Fazenda Atualizada", "Sinop", 2500.0, orgId);
+
+        given(farmService.updateFarm(eq(farmId), any(FarmUpdateRequestDto.class))).willReturn(response);
+
+        // Act & Assert
+        assertThat(
+                mockMvc.put().uri("/api/farm/{id}", farmId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(request))
+        )
+                .hasStatus(HttpStatus.OK)
+                .bodyJson()
+                .hasPathSatisfying("$.name", v -> assertThat(v).isEqualTo("Fazenda Atualizada"))
+                .hasPathSatisfying("$.location", v -> assertThat(v).isEqualTo("Sinop"))
+                .hasPathSatisfying("$.hectareArea", v -> assertThat(v).isEqualTo(2500.0));
+    }
+
+    @Test
+    @DisplayName("Should return 404 when updating non-existent farm")
+    void shouldReturn404WhenUpdatingInvalidFarm() {
+        // Arrange
+        UUID invalidId = UUID.randomUUID();
+        FarmUpdateRequestDto request = new FarmUpdateRequestDto("Fazenda Atualizada", "Sinop", 2500.0);
+
+        given(farmService.updateFarm(eq(invalidId), any(FarmUpdateRequestDto.class)))
+                .willThrow(new FarmNotFoundException("Fazenda não encontrada."));
+
+        // Act & Assert
+        assertThat(
+                mockMvc.put().uri("/api/farm/{id}", invalidId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(request))
+        )
+                .hasStatus(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("Should return 400 when updating farm with invalid body")
+    void shouldReturn400WhenUpdatingFarmWithInvalidBody() {
+        // Arrange
+        UUID farmId = UUID.randomUUID();
+        FarmUpdateRequestDto invalidRequest = new FarmUpdateRequestDto("", "", -10.0);
+
+        // Act & Assert
+        assertThat(
+                mockMvc.put().uri("/api/farm/{id}", farmId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(invalidRequest))
+        )
+                .hasStatus(HttpStatus.BAD_REQUEST);
+    }
 }

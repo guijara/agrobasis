@@ -72,17 +72,9 @@ public class FarmService {
         Farm farm = farmRepository.findById(id)
                 .orElseThrow(() -> new FarmNotFoundException("Fazenda não encontrada."));
 
-        if(!request.name().equals(farm.getName())){
-            farm.setName(request.name());
-        }
-
-        if(!request.location().equals(farm.getLocation())){
-            farm.setLocation(request.location());
-        }
-
-        if(!request.hectareArea().equals(farm.getHectareArea())){
-            farm.setHectareArea(request.hectareArea());
-        }
+        farm.setName(request.name());
+        farm.setLocation(request.location());
+        farm.setHectareArea(request.hectareArea());
 
         farmRepository.save(farm);
 
