@@ -1,5 +1,6 @@
 package com.agrobasis.core_service.config;
 
+import com.agrobasis.core_service.farm.FarmNotFoundException;
 import com.agrobasis.core_service.organization.OrganizationAlreadyExistsException;
 import com.agrobasis.core_service.organization.OrganizationNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,7 +40,19 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(),
                 null
         );
-        // CORRIGIDO: O status do retorno agora é NOT_FOUND
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(FarmNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleOrganizationNotFound(FarmNotFoundException ex, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 

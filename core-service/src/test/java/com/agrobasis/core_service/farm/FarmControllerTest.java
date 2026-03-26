@@ -128,7 +128,7 @@ class FarmControllerTest {
 
         // Act & Assert
         assertThat(
-                mockMvc.get().uri("/api/farm/{id}", invalidId)
+                mockMvc.get().uri("/api/farm/{organizationId}", invalidId)
                         .accept(MediaType.APPLICATION_JSON)
         )
                 .hasStatus(HttpStatus.NOT_FOUND);

@@ -6,6 +6,7 @@ import com.agrobasis.core_service.organization.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -44,8 +45,6 @@ public class FarmService {
 
     public FarmResponseDto getFarmById(UUID id) {
 
-
-
         Farm farm = farmRepository.findById(id).orElseThrow(() -> new FarmNotFoundException("Fazenda não encontrada."));
 
         return new FarmResponseDto(
@@ -57,9 +56,9 @@ public class FarmService {
         );
     }
 
-    public Page<FarmResponseDto> getAllFarmsByOrganization(UUID organizationId, PageRequest pageRequest) {
+    public Page<FarmResponseDto> getAllFarmsByOrganization(UUID organizationId, Pageable pageable) {
 
-        Page<Farm> farms = farmRepository.findAllByOrganizationId(organizationId,pageRequest);
+        Page<Farm> farms = farmRepository.findAllByOrganizationId(organizationId,pageable);
 
         return farms.map(Farm -> new FarmResponseDto(
                 Farm.getId(),
