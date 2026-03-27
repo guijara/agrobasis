@@ -20,7 +20,7 @@ public class Plot {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "hectare_area", nullable = false, columnDefinition = "numeric(10,2)")
     private Double hectareArea;
 
     @ManyToOne(fetch = FetchType.LAZY)

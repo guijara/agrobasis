@@ -25,7 +25,7 @@ public class Farm {
     @JoinColumn(name = "organization_id", nullable = false)
     private Organization organization;
 
-    @Column(name = "total_hectare_area", nullable = false)
+    @Column(name = "hectare_area", nullable = false, columnDefinition = "numeric(10,2)")
     private Double hectareArea;
 
     @Column(nullable = false)
