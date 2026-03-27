@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Positive;
 
 import java.util.UUID;
 
-public record PlotRequestDto(
+public record PlotCreateRequestDto(
         @NotBlank(message = "O nome do talhão é obrigatório")
         String name,
         @NotNull(message = "A área em hectares é obrigatória")

@@ -3,6 +3,7 @@ package com.agrobasis.core_service.config;
 import com.agrobasis.core_service.farm.FarmNotFoundException;
 import com.agrobasis.core_service.organization.OrganizationAlreadyExistsException;
 import com.agrobasis.core_service.organization.OrganizationNotFoundException;
+import com.agrobasis.core_service.plot.PlotNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -25,7 +26,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT.getReasonPhrase(),
                 ex.getMessage(),
                 request.getRequestURI(),
-                null // Sem detalhes granulares para este erro
+                null
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
@@ -44,7 +45,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(FarmNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleOrganizationNotFound(FarmNotFoundException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleFarmNotFound(FarmNotFoundException ex, HttpServletRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.NOT_FOUND.value(),
@@ -56,11 +57,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
-    // Trata falhas de validação de DTO (Bad Request 400)
+    @ExceptionHandler(PlotNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePlotNotFound(PlotNotFoundException ex, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
 
-        // Extrai os erros de todos os campos que falharam na validação
         List<ErrorResponse.FieldErrorDetail> fieldErrors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -82,7 +94,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
 
-        // Em um sistema real, é imperativo logar a 'ex' aqui (ex: log.error("Erro interno", ex))
 
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),

@@ -216,10 +216,10 @@ class FarmServiceTest {
             // Assert
             assertThat(result).isNotNull();
             assertThat(result.id()).isEqualTo(farmId);
-            assertThat(result.name()).isEqualTo("Fazenda Nova"); // Validando a alteração
+            assertThat(result.name()).isEqualTo("Fazenda Nova");
             assertThat(result.location()).isEqualTo("Sinop");
             assertThat(result.hectareArea()).isEqualTo(2000.0);
-            assertThat(result.organizationId()).isEqualTo(orgId); // Organização se mantém intacta
+            assertThat(result.organizationId()).isEqualTo(orgId);
 
             verify(farmRepository, times(1)).findById(farmId);
             verify(farmRepository, times(1)).save(existingFarm);
