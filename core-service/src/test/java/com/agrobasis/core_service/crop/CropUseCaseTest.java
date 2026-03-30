@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.reactive.server.WebTestClient; // O substituto moderno
+import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -21,7 +21,7 @@ public class CropUseCaseTest {
     private WebTestClient webTestClient;
 
     @Test
-    @DisplayName("Should complete the full cycle of creating a crop for a plot")
+    @DisplayName("Deve realizar o ciclo de criar uma safra para um talhão")
     void shouldCreateCropSuccessfully() {
         // Arrange
         UUID plotId = UUID.randomUUID();
