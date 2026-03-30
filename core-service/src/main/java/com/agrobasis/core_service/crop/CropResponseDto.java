@@ -7,5 +7,6 @@ public record CropResponseDto(String name,
           String product,
           LocalDate startDate,
           LocalDate endDate,
-          UUID id) {
+          UUID id,
+          UUID plotId) {
 }

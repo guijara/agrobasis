@@ -44,7 +44,8 @@ public class CropService {
             crop.getProduct(),
             crop.getStartDate(),
             crop.getEndDate(),
-            crop.getId()
+            crop.getId(),
+            crop.getPlot().getId()
         );
     }
 }
