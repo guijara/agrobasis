@@ -11,7 +11,7 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
-@Table("crop")
+@Table(name = "crop")
 public class Crop {
 
     @Id
@@ -30,7 +30,7 @@ public class Crop {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    @ManyToOne
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "plot_id", nullable = false)
     private Plot plot;
 }
