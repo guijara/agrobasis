@@ -1,5 +1,6 @@
 package com.agrobasis.core_service.crop;
 
+import com.agrobasis.core_service.config.ErrorResponse;
 import com.agrobasis.core_service.farm.Farm;
 import com.agrobasis.core_service.farm.FarmRepository;
 import com.agrobasis.core_service.organization.Organization;
@@ -12,9 +13,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -25,8 +28,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 class CropUseCaseTest {
 
-    @Autowired
-    private WebTestClient webTestClient;
+    @LocalServerPort
+    private int port;
+
+    private RestClient restClient;
 
     @Autowired
     private OrganizationRepository organizationRepository;
@@ -41,22 +46,26 @@ class CropUseCaseTest {
 
     @BeforeEach
     void setUp() {
+        this.restClient = RestClient.builder()
+                .baseUrl("http://localhost:" + port)
+                .build();
+
         cropRepository.deleteAll();
         plotRepository.deleteAll();
         farmRepository.deleteAll();
         organizationRepository.deleteAll();
 
-        Organization org = new Organization();
-        org.setName("Agro Corp");
-        org.setCnpj("12.345.678/0001-90");
-        org.setLocation("Cuiabá");
-        org = organizationRepository.save(org);
+        Organization organization = new Organization();
+        organization.setName("AgroTech");
+        organization.setCnpj("123");
+        organization.setLocation("Cuiabá");
+        organizationRepository.save(organization);
 
         Farm farm = new Farm();
-        farm.setName("Fazenda Sol Nascente");
+        farm.setName("Fazenda Modelo");
         farm.setLocation("MT-251");
         farm.setHectareArea(1000.0);
-        farm.setOrganization(org);
+        farm.setOrganization(organization);
         farm = farmRepository.save(farm);
 
         Plot plot = new Plot();
@@ -69,11 +78,11 @@ class CropUseCaseTest {
     }
 
     @Nested
-    @DisplayName("POST /api/crop")
-    class CreateCropUseCase {
+    @DisplayName("Cenários de POST")
+    class PostScenarios {
 
         @Test
-        @DisplayName("Should create crop successfully when data is valid")
+        @DisplayName("Deve criar safra com sucesso")
         void shouldCreateCrop() {
             CropRequestDto request = new CropRequestDto(
                     "Soja 2026", "SOJA",
@@ -82,25 +91,23 @@ class CropUseCaseTest {
                     savedPlotId
             );
 
-            webTestClient.post()
+            var response = restClient.post()
                     .uri("/api/crop")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus().isCreated()
-                    .expectBody(CropResponseDto.class)
-                    .value(response -> {
-                        assertThat(response.id()).isNotNull();
-                        assertThat(response.name()).isEqualTo("Soja 2026");
-                        assertThat(response.plotId()).isEqualTo(savedPlotId);
-                    });
+                    .body(request)
+                    .retrieve()
+                    .toEntity(CropResponseDto.class);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+            assertThat(response.getBody().name()).isEqualTo("Soja 2026");
+            assertThat(response.getBody().id()).isNotNull();
         }
 
         @Test
-        @DisplayName("Should return 400 when crops overlap in the same plot")
+        @DisplayName("Deve barrar sobreposição de datas")
         void shouldFailWhenOverlapping() {
             Crop obstacle = new Crop();
-            obstacle.setName("Safra Ocupada");
+            obstacle.setName("Safra Existente");
             obstacle.setProduct("MILHO");
             obstacle.setStartDate(LocalDate.of(2026, 1, 1));
             obstacle.setEndDate(LocalDate.of(2026, 5, 1));
@@ -108,20 +115,72 @@ class CropUseCaseTest {
             cropRepository.save(obstacle);
 
             CropRequestDto conflictRequest = new CropRequestDto(
-                    "Safra Intrusiva", "SOJA",
+                    "Safra Conflito", "SOJA",
                     LocalDate.of(2026, 4, 15),
                     LocalDate.of(2026, 8, 1),
                     savedPlotId
             );
 
-            webTestClient.post()
+            var response = restClient.post()
                     .uri("/api/crop")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(conflictRequest)
-                    .exchange()
-                    .expectStatus().isBadRequest()
-                    .expectBody()
-                    .jsonPath("$.message").isEqualTo("O talhão já possui uma safra programada para este período.");
+                    .body(conflictRequest)
+                    .retrieve()
+                    .onStatus(status -> status.is4xxClientError(), (req, res) -> {
+                    })
+                    .toEntity(ErrorResponse.class);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().message()).isEqualTo("O talhão já possui uma safra programada para este período.");
         }
+    }
+
+    @Nested
+    @DisplayName("Cenários de GET")
+    class GetScenarios {
+
+        @Test
+        @DisplayName("Deve listar safras de um talhão com paginação")
+        void shouldListCropsByPlot() {
+            // Arrange
+            createTestCrop("Safra A", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 5, 1));
+            createTestCrop("Safra B", LocalDate.of(2026, 6, 1), LocalDate.of(2026, 11, 1));
+
+            // Act
+            var response = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/api/crop")
+                            .queryParam("plotId", savedPlotId)
+                            .build())
+                    .retrieve()
+                    .toEntity(String.class);
+
+            // Assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(response.getBody()).contains("Safra A");
+            assertThat(response.getBody()).contains("Safra B");
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 ao buscar safra inexistente")
+        void shouldReturn404WhenNotFound() {
+            var response = restClient.get()
+                    .uri("/api/crop/{id}", UUID.randomUUID())
+                    .retrieve()
+                    .onStatus(status -> status.is4xxClientError(), (req, res) -> {})
+                    .toEntity(ErrorResponse.class);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    private void createTestCrop(String name, LocalDate start, LocalDate end) {
+        Crop crop = new Crop();
+        crop.setName(name);
+        crop.setProduct("SOJA");
+        crop.setStartDate(start);
+        crop.setEndDate(end);
+        crop.setPlot(plotRepository.getReferenceById(savedPlotId));
+        cropRepository.save(crop);
     }
 }

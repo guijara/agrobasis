@@ -1,5 +1,6 @@
 package com.agrobasis.core_service.config;
 
+import com.agrobasis.core_service.crop.InvalidCropPeriodException;
 import com.agrobasis.core_service.farm.FarmNotFoundException;
 import com.agrobasis.core_service.organization.OrganizationAlreadyExistsException;
 import com.agrobasis.core_service.organization.OrganizationNotFoundException;
@@ -68,6 +69,19 @@ public class GlobalExceptionHandler {
                 null
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(InvalidCropPeriodException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCropPeriod(InvalidCropPeriodException e, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                e.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
