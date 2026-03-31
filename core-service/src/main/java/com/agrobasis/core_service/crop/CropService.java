@@ -3,9 +3,13 @@ package com.agrobasis.core_service.crop;
 import com.agrobasis.core_service.plot.Plot;
 import com.agrobasis.core_service.plot.PlotNotFoundException;
 import com.agrobasis.core_service.plot.PlotRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -47,5 +51,33 @@ public class CropService {
             crop.getId(),
             crop.getPlot().getId()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public CropResponseDto getCropById(UUID id){
+        Crop response = cropRepository.findById(id).orElseThrow
+                (() -> new CropNotFoundException("A safra não foi encontrada."));
+
+        return new CropResponseDto(
+                response.getName(),
+                response.getProduct(),
+                response.getStartDate(),
+                response.getEndDate(),
+                response.getId(),
+                response.getPlot().getId()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CropResponseDto> ListCropByPlot(UUID plotId, Pageable pageable){
+        Page<Crop> response = cropRepository.findAllByPlot_Id(plotId,pageable);
+        return response.map(crop -> new CropResponseDto(
+                crop.getName(),
+                crop.getProduct(),
+                crop.getStartDate(),
+                crop.getEndDate(),
+                crop.getId(),
+                crop.getPlot().getId()
+        ));
     }
 }
