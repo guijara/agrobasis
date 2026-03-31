@@ -46,7 +46,7 @@ public class CropController {
 
     @Operation(summary = "Lista as safras de um talhão", description = "Retorna safras paginadas. Padrão: mais recentes primeiro.")
     @ApiResponse(responseCode = "200", description = "Listagem realizada")
-    @GetMapping("/{plotId}")
+    @GetMapping()
     public ResponseEntity<Page<CropResponseDto>> listCrop(@RequestParam UUID plotId,
               @ParameterObject @PageableDefault(size = 10, sort = "startDate", direction = Sort.Direction.DESC) Pageable pageable){
         Page<CropResponseDto> response = cropService.ListCropByPlot(plotId,pageable);

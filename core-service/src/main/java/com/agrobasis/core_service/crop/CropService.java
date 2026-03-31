@@ -53,7 +53,6 @@ public class CropService {
         );
     }
 
-    @Transactional(readOnly = true)
     public CropResponseDto getCropById(UUID id){
         Crop response = cropRepository.findById(id).orElseThrow
                 (() -> new CropNotFoundException("A safra não foi encontrada."));
@@ -68,7 +67,6 @@ public class CropService {
         );
     }
 
-    @Transactional(readOnly = true)
     public Page<CropResponseDto> ListCropByPlot(UUID plotId, Pageable pageable){
         Page<Crop> response = cropRepository.findAllByPlot_Id(plotId,pageable);
         return response.map(crop -> new CropResponseDto(
@@ -80,4 +78,5 @@ public class CropService {
                 crop.getPlot().getId()
         ));
     }
+
 }
