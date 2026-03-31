@@ -1,5 +1,5 @@
 
-CREATE TABLE plots (
+CREATE TABLE plot (
        id UUID PRIMARY KEY,
        name VARCHAR(255) NOT NULL,
        hectare_area NUMERIC(10, 2) NOT NULL,
@@ -11,4 +11,4 @@ CREATE TABLE plots (
                ON DELETE CASCADE
 );
 
-CREATE INDEX idx_plot_farm_id ON plots(farm_id);
+CREATE INDEX idx_plot_farm_id ON plot(farm_id);

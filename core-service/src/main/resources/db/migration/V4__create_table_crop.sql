@@ -8,7 +8,7 @@ CREATE TABLE crop (
 
       CONSTRAINT fk_crop_plot
           FOREIGN KEY (plot_id)
-              REFERENCES plots (id)
+              REFERENCES plot (id)
               ON DELETE CASCADE
 );
 

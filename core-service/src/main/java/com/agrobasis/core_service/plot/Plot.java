@@ -10,7 +10,7 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
-@Table(name = "plots")
+@Table(name = "plot")
 public class Plot {
 
     @Id
