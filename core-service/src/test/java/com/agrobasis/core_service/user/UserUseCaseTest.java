@@ -46,9 +46,9 @@ class UserUseCaseTest {
         organizationRepository.deleteAll();
 
         Organization org = new Organization();
-        org.setName("AgroTech Holding");
+        org.setName("AgroTech");
         org.setCnpj("12.345.678/0001-90");
-        org.setLocation("Cuiabá - MT");
+        org.setLocation("Cuiabá");
         org = organizationRepository.save(org);
 
         this.savedOrgId = org.getId();
@@ -63,7 +63,7 @@ class UserUseCaseTest {
         void shouldCreateUserSuccessfully() {
             // Arrange
             UserRequestDto request = new UserRequestDto(
-                    "Guilherme Silva",
+                    "Guilherme",
                     "guilherme@agrotech.com",
                     "SenhaForte123",
                     UserRole.ADMIN,
@@ -82,7 +82,7 @@ class UserUseCaseTest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().id()).isNotNull();
-            assertThat(response.getBody().name()).isEqualTo("Guilherme Silva");
+            assertThat(response.getBody().name()).isEqualTo("Guilherme");
             assertThat(response.getBody().email()).isEqualTo("guilherme@agrotech.com");
             assertThat(response.getBody().role()).isEqualTo(UserRole.ADMIN);
             assertThat(response.getBody().organizationId()).isEqualTo(savedOrgId);
@@ -93,7 +93,7 @@ class UserUseCaseTest {
         void shouldFailWhenEmailIsDuplicated() {
             // Arrange
             User existingUser = new User();
-            existingUser.setName("João da Silva");
+            existingUser.setName("João");
             existingUser.setEmail("guilherme@agrotech.com");
             existingUser.setPassword("123456");
             existingUser.setRole(UserRole.OPERATOR);
@@ -114,12 +114,12 @@ class UserUseCaseTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(conflictRequest)
                     .retrieve()
-                    .onStatus(status -> status.is4xxClientError(), (req, res) -> {}) // Deixa o 400 passar para validarmos
+                    .onStatus(status -> status.is4xxClientError(), (req, res) -> {})
                     .toEntity(ErrorResponse.class);
 
             // Assert
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-            assertThat(response.getBody().message()).isEqualTo("Este email já está em uso.");
+            assertThat(response.getBody().message()).isEqualTo("O email guilherme@agrotech.com já existe");
         }
     }
 }

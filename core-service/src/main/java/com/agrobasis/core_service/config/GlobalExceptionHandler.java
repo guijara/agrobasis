@@ -6,10 +6,9 @@ import com.agrobasis.core_service.farm.FarmNotFoundException;
 import com.agrobasis.core_service.organization.OrganizationAlreadyExistsException;
 import com.agrobasis.core_service.organization.OrganizationNotFoundException;
 import com.agrobasis.core_service.plot.PlotNotFoundException;
-import com.agrobasis.core_service.user.UserAlreadyExistsException;
+import com.agrobasis.core_service.user.UserEmailAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -100,17 +99,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
-    @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFound(UserAlreadyExistsException e, HttpServletRequest request) {
+    @ExceptionHandler(UserEmailAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleUserEmailAlreadyExistsException(UserEmailAlreadyExistsException e, HttpServletRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
-                "Not Found",
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
                 e.getMessage(),
                 request.getRequestURI(),
                 null
         );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
