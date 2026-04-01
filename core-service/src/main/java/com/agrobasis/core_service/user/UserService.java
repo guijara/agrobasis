@@ -4,7 +4,10 @@ import com.agrobasis.core_service.organization.Organization;
 import com.agrobasis.core_service.organization.OrganizationNotFoundException;
 import com.agrobasis.core_service.organization.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -44,7 +47,8 @@ public class UserService {
     }
 
     public UserResponseDto findUserById(UUID id){
-        User user = userRepository.findById(id).orElseThrow(() -> UserAlreadyExistsException("Usuário já existe."));
+        User user = userRepository.findById(id).orElseThrow(
+                () -> new UserNotFoundException("Usuário não encontrado."));
 
         return new UserResponseDto(
                 user.getId(),
@@ -53,5 +57,51 @@ public class UserService {
                 user.getRole(),
                 user.getOrganization().getId()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserResponseDto> findAllUsersByOrganization(UUID organizationId, Pageable pageable){
+        Page<User> users = userRepository.findAllByOrganization_Id(organizationId,pageable);
+
+        return users.map(user -> new UserResponseDto(
+            user.getId(),
+            user.getName(),
+            user.getEmail(),
+            user.getRole(),
+            user.getOrganization().getId()
+        ));
+    }
+
+    @Transactional
+    public UserResponseDto updateUser(UUID id, UserUpdateRequestDto request){
+        User user = userRepository.findById(id).orElseThrow(
+                () -> new UserNotFoundException("Usuário não encontrado"));
+
+        boolean emailExists = userRepository.existsByEmailAndIdNot(request.email(),id);
+
+        if (emailExists){
+            throw new UserEmailAlreadyExistsException("O email "+request.email()+" já existe");
+        }
+
+        user.setName(request.name());
+        user.setEmail(request.email());
+
+        userRepository.save(user);
+
+        return new UserResponseDto(
+            user.getId(),
+            user.getName(),
+            user.getEmail(),
+            user.getRole(),
+            user.getOrganization().getId()
+        );
+    }
+
+    @Transactional
+    public void deleteUser(UUID id){
+        User user = userRepository.findById(id).orElseThrow(
+                () -> new UserNotFoundException("Usuário não encontrado."));
+
+        userRepository.delete(user);
     }
 }

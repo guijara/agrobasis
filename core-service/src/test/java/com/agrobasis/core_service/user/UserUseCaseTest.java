@@ -182,6 +182,63 @@ class UserUseCaseTest {
     }
 
     @Nested
+    @DisplayName("Cenários de PUT /api/user/{id}")
+    class UpdateUserScenarios {
+
+        @Test
+        @DisplayName("Deve atualizar os dados básicos do usuário com sucesso")
+        void shouldUpdateUserSuccessfully() {
+            // Arrange
+            User existingUser = createTestUser("Usuário Antigo", "antigo@agrotech.com");
+
+            UserUpdateRequestDto updateRequest = new UserUpdateRequestDto(
+                    "Usuário Atualizado Silva",
+                    "atualizado@agrotech.com"
+            );
+
+            // Act
+            var response = restClient.put()
+                    .uri("/api/user/{id}", existingUser.getId())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(updateRequest)
+                    .retrieve()
+                    .toEntity(UserResponseDto.class);
+
+            // Assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().name()).isEqualTo("Usuário Atualizado Silva");
+            assertThat(response.getBody().email()).isEqualTo("atualizado@agrotech.com");
+        }
+
+        @Test
+        @DisplayName("Deve barrar atualização se o novo e-mail já pertencer a OUTRO usuário")
+        void shouldFailUpdateWhenEmailBelongsToAnotherUser() {
+            // Arrange
+            createTestUser("Alice Original", "alice@agrotech.com");
+            User userBob = createTestUser("Bob Hacker", "bob@agrotech.com");
+
+            UserUpdateRequestDto conflictRequest = new UserUpdateRequestDto(
+                    "Bob Malicioso",
+                    "alice@agrotech.com"
+            );
+
+            // Act
+            var response = restClient.put()
+                    .uri("/api/user/{id}", userBob.getId())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(conflictRequest)
+                    .retrieve()
+                    .onStatus(status -> status.is4xxClientError(), (req, res) -> {})
+                    .toEntity(ErrorResponse.class);
+
+            // Assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().message()).isEqualTo("O email alice@agrotech.com já existe");
+        }
+    }
+
+    @Nested
     @DisplayName("Cenários de DELETE /api/user")
     class DeleteUserScenarios {
 
