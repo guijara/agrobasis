@@ -122,4 +122,96 @@ class UserUseCaseTest {
             assertThat(response.getBody().message()).isEqualTo("O email guilherme@agrotech.com já existe");
         }
     }
+
+    @Nested
+    @DisplayName("Cenários de GET /api/user")
+    class GetUserScenarios {
+
+        @Test
+        @DisplayName("Deve buscar um usuário pelo ID com sucesso")
+        void shouldGetUserById() {
+            // Arrange
+            User testUser = createTestUser("Buscado da Silva", "busca@agrotech.com");
+
+            // Act
+            var response = restClient.get()
+                    .uri("/api/user/{id}", testUser.getId())
+                    .retrieve()
+                    .toEntity(UserResponseDto.class);
+
+            // Assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().name()).isEqualTo("Buscado da Silva");
+            assertThat(response.getBody().email()).isEqualTo("busca@agrotech.com");
+            assertThat(response.getBody().organizationId()).isEqualTo(savedOrgId);
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 ao buscar usuário inexistente")
+        void shouldReturn404WhenUserNotFound() {
+            var response = restClient.get()
+                    .uri("/api/user/{id}", UUID.randomUUID())
+                    .retrieve()
+                    .onStatus(status -> status.is4xxClientError(), (req, res) -> {})
+                    .toEntity(ErrorResponse.class);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("Deve listar usuários de uma organização com paginação")
+        void shouldListUsersByOrganization() {
+            // Arrange
+            createTestUser("Alice Souza", "alice@agrotech.com");
+            createTestUser("Bob Alves", "bob@agrotech.com");
+
+            // Act
+            var response = restClient.get()
+                    .uri(builder -> builder.path("/api/user")
+                            .queryParam("organizationId", savedOrgId)
+                            .build())
+                    .retrieve()
+                    .toEntity(String.class);
+
+            // Assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(response.getBody()).contains("Alice Souza");
+            assertThat(response.getBody()).contains("Bob Alves");
+        }
+    }
+
+    @Nested
+    @DisplayName("Cenários de DELETE /api/user")
+    class DeleteUserScenarios {
+
+        @Test
+        @DisplayName("Deve deletar um usuário com sucesso (Status 204)")
+        void shouldDeleteUserSuccessfully() {
+            // Arrange
+            User testUser = createTestUser("Demitido da Silva", "demitido@agrotech.com");
+
+            // Act
+            var response = restClient.delete()
+                    .uri("/api/user/{id}", testUser.getId())
+                    .retrieve()
+                    .toBodilessEntity();
+
+            // Assert
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+            boolean exists = userRepository.existsById(testUser.getId());
+            assertThat(exists).isFalse();
+        }
+    }
+
+    private User createTestUser(String name, String email) {
+        User user = new User();
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword("Senha123");
+        user.setRole(UserRole.OPERATOR);
+        user.setOrganization(organizationRepository.getReferenceById(savedOrgId));
+        return userRepository.save(user);
+    }
 }

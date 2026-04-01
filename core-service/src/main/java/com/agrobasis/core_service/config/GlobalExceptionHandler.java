@@ -6,6 +6,7 @@ import com.agrobasis.core_service.farm.FarmNotFoundException;
 import com.agrobasis.core_service.organization.OrganizationAlreadyExistsException;
 import com.agrobasis.core_service.organization.OrganizationNotFoundException;
 import com.agrobasis.core_service.plot.PlotNotFoundException;
+import com.agrobasis.core_service.user.UserAlreadyExistsException;
 import com.agrobasis.core_service.user.UserEmailAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -101,6 +102,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserEmailAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleUserEmailAlreadyExistsException(UserEmailAlreadyExistsException e, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                e.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleUserAlreadyExistsException(UserAlreadyExistsException e, HttpServletRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),

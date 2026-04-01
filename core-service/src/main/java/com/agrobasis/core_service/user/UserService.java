@@ -6,6 +6,8 @@ import com.agrobasis.core_service.organization.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -38,6 +40,18 @@ public class UserService {
             user.getEmail(),
             user.getRole(),
             user.getOrganization().getId()
+        );
+    }
+
+    public UserResponseDto findUserById(UUID id){
+        User user = userRepository.findById(id).orElseThrow(() -> UserAlreadyExistsException("Usuário já existe."));
+
+        return new UserResponseDto(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
+                user.getOrganization().getId()
         );
     }
 }
