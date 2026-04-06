@@ -1,5 +1,12 @@
 package com.agrobasis.core_service.organization;
 
+import com.agrobasis.core_service.organization.api.dto.OrganizationRequest;
+import com.agrobasis.core_service.organization.api.dto.OrganizationResponse;
+import com.agrobasis.core_service.organization.application.OrganizationService;
+import com.agrobasis.core_service.organization.domain.Organization;
+import com.agrobasis.core_service.organization.domain.exception.OrganizationAlreadyExistsException;
+import com.agrobasis.core_service.organization.domain.exception.OrganizationNotFoundException;
+import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,7 +39,7 @@ public class OrganizationServiceTest {
         @Test
         void shouldCreateOrganizationSuccessfully() {
             // Arrange
-            OrganizationRequestDto dto = new OrganizationRequestDto("AgroTech", "00.000.000/0000-00", "Cuiabá");
+            OrganizationRequest dto = new OrganizationRequest("AgroTech", "00.000.000/0000-00", "Cuiabá");
 
             when(organizationRepository.existsByCnpj(dto.cnpj())).thenReturn(false);
 
@@ -42,7 +49,7 @@ public class OrganizationServiceTest {
             when(organizationRepository.save(any(Organization.class))).thenReturn(savedEntity);
 
             // Act
-            OrganizationResponseDto result = organizationService.createOrganization(dto);
+            OrganizationResponse result = organizationService.createOrganization(dto);
 
             // Assert
             assertThat(result.name()).isEqualTo("AgroTech");
@@ -52,7 +59,7 @@ public class OrganizationServiceTest {
         @Test
         void shouldThrowExceptionWhenCnpjAlreadyExists() {
             // Arrange
-            OrganizationRequestDto dto = new OrganizationRequestDto("AgroTech", "00.000.000/0000-00", "Cuiabá");
+            OrganizationRequest dto = new OrganizationRequest("AgroTech", "00.000.000/0000-00", "Cuiabá");
 
             when(organizationRepository.existsByCnpj(dto.cnpj())).thenReturn(true);
 
@@ -82,7 +89,7 @@ public class OrganizationServiceTest {
             when(organizationRepository.findById(id)).thenReturn(Optional.of(organization));
 
             // Act
-            OrganizationResponseDto result = organizationService.getOrganization(id);
+            OrganizationResponse result = organizationService.getOrganization(id);
 
             // Assert
             assertThat(result).isNotNull();

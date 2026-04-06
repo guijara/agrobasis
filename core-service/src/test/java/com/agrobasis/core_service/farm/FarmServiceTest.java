@@ -1,8 +1,15 @@
 package com.agrobasis.core_service.farm;
 
-import com.agrobasis.core_service.organization.Organization;
-import com.agrobasis.core_service.organization.OrganizationNotFoundException;
-import com.agrobasis.core_service.organization.OrganizationRepository;
+import com.agrobasis.core_service.farm.api.dto.FarmCreateRequest;
+import com.agrobasis.core_service.farm.api.dto.FarmResponse;
+import com.agrobasis.core_service.farm.api.dto.FarmUpdateRequest;
+import com.agrobasis.core_service.farm.application.FarmService;
+import com.agrobasis.core_service.farm.domain.Farm;
+import com.agrobasis.core_service.farm.domain.FarmNotFoundException;
+import com.agrobasis.core_service.farm.infrastructure.FarmRepository;
+import com.agrobasis.core_service.organization.domain.Organization;
+import com.agrobasis.core_service.organization.domain.exception.OrganizationNotFoundException;
+import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -45,7 +52,7 @@ class FarmServiceTest {
         void shouldCreateFarmSuccessfully() {
             // Arrange
             UUID orgId = UUID.randomUUID();
-            FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, orgId);
+            FarmCreateRequest request = new FarmCreateRequest("Fazenda", "Cuiabá", 1500.50, orgId);
 
             Organization mockOrg = new Organization();
             mockOrg.setId(orgId);
@@ -63,7 +70,7 @@ class FarmServiceTest {
             when(farmRepository.save(any(Farm.class))).thenReturn(savedFarm);
 
             // Act
-            FarmResponseDto result = farmService.createFarm(request);
+            FarmResponse result = farmService.createFarm(request);
 
             // Assert
             assertThat(result).isNotNull();
@@ -81,7 +88,7 @@ class FarmServiceTest {
         void shouldThrowExceptionWhenOrganizationDoesNotExist() {
             // Arrange
             UUID invalidOrgId = UUID.randomUUID();
-            FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, invalidOrgId);
+            FarmCreateRequest request = new FarmCreateRequest("Fazenda", "Cuiabá", 1500.50, invalidOrgId);
 
             when(organizationRepository.findById(invalidOrgId)).thenReturn(Optional.empty());
 
@@ -119,7 +126,7 @@ class FarmServiceTest {
             when(farmRepository.findById(farmId)).thenReturn(Optional.of(mockFarm));
 
             // Act
-            FarmResponseDto result = farmService.getFarmById(farmId);
+            FarmResponse result = farmService.getFarmById(farmId);
 
             // Assert
             assertThat(result).isNotNull();
@@ -172,7 +179,7 @@ class FarmServiceTest {
             when(farmRepository.findAllByOrganizationId(eq(orgId), any(Pageable.class))).thenReturn(pagedFarms);
 
             // Act
-            Page<FarmResponseDto> result = farmService.getAllFarmsByOrganization(orgId, pageRequest);
+            Page<FarmResponse> result = farmService.getAllFarmsByOrganization(orgId, pageRequest);
 
             // Assert
             assertThat(result).isNotNull();
@@ -204,14 +211,14 @@ class FarmServiceTest {
             existingFarm.setHectareArea(1000.0);
             existingFarm.setOrganization(mockOrg);
 
-            FarmUpdateRequestDto updateRequest = new FarmUpdateRequestDto("Fazenda Nova", "Sinop", 2000.0);
+            FarmUpdateRequest updateRequest = new FarmUpdateRequest("Fazenda Nova", "Sinop", 2000.0);
 
             when(farmRepository.findById(farmId)).thenReturn(Optional.of(existingFarm));
 
             when(farmRepository.save(any(Farm.class))).thenReturn(existingFarm);
 
             // Act
-            FarmResponseDto result = farmService.updateFarm(farmId, updateRequest);
+            FarmResponse result = farmService.updateFarm(farmId, updateRequest);
 
             // Assert
             assertThat(result).isNotNull();
@@ -230,7 +237,7 @@ class FarmServiceTest {
         void shouldThrowExceptionWhenUpdatingInvalidFarm() {
             // Arrange
             UUID invalidId = UUID.randomUUID();
-            FarmUpdateRequestDto updateRequest = new FarmUpdateRequestDto("Fazenda Nova", "Sinop", 2000.0);
+            FarmUpdateRequest updateRequest = new FarmUpdateRequest("Fazenda Nova", "Sinop", 2000.0);
 
             when(farmRepository.findById(invalidId)).thenReturn(Optional.empty());
 

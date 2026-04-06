@@ -1,6 +1,12 @@
 package com.agrobasis.core_service.farm;
 
-import com.agrobasis.core_service.organization.OrganizationNotFoundException;
+import com.agrobasis.core_service.farm.api.FarmController;
+import com.agrobasis.core_service.farm.api.dto.FarmCreateRequest;
+import com.agrobasis.core_service.farm.api.dto.FarmResponse;
+import com.agrobasis.core_service.farm.api.dto.FarmUpdateRequest;
+import com.agrobasis.core_service.farm.application.FarmService;
+import com.agrobasis.core_service.farm.domain.FarmNotFoundException;
+import com.agrobasis.core_service.organization.domain.exception.OrganizationNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,10 +53,10 @@ class FarmControllerTest {
             UUID orgId = UUID.randomUUID();
             UUID farmId = UUID.randomUUID();
 
-            FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, orgId);
-            FarmResponseDto response = new FarmResponseDto(farmId, "Fazenda", "Cuiabá", 1500.50, orgId);
+            FarmCreateRequest request = new FarmCreateRequest("Fazenda", "Cuiabá", 1500.50, orgId);
+            FarmResponse response = new FarmResponse(farmId, "Fazenda", "Cuiabá", 1500.50, orgId);
 
-            given(farmService.createFarm(any(FarmCreateRequestDto.class))).willReturn(response);
+            given(farmService.createFarm(any(FarmCreateRequest.class))).willReturn(response);
 
             // Act & Assert
             assertThat(
@@ -72,9 +78,9 @@ class FarmControllerTest {
         void shouldReturn404WhenOrganizationIsNotFound() {
             // Arrange
             UUID invalidOrgId = UUID.randomUUID();
-            FarmCreateRequestDto request = new FarmCreateRequestDto("Fazenda", "Cuiabá", 1500.50, invalidOrgId);
+            FarmCreateRequest request = new FarmCreateRequest("Fazenda", "Cuiabá", 1500.50, invalidOrgId);
 
-            given(farmService.createFarm(any(FarmCreateRequestDto.class)))
+            given(farmService.createFarm(any(FarmCreateRequest.class)))
                     .willThrow(new OrganizationNotFoundException("Organização não encontrada."));
 
             // Act & Assert
@@ -90,7 +96,7 @@ class FarmControllerTest {
         @DisplayName("Should return 400 when request body is invalid")
         void shouldReturn400WhenRequestBodyIsInvalid() {
             // Arrange
-            FarmCreateRequestDto invalidRequest = new FarmCreateRequestDto("", "", -10.0, null);
+            FarmCreateRequest invalidRequest = new FarmCreateRequest("", "", -10.0, null);
 
             // Act & Assert
             assertThat(
@@ -111,7 +117,7 @@ class FarmControllerTest {
             // Arrange
             UUID farmId = UUID.randomUUID();
             UUID orgId = UUID.randomUUID();
-            FarmResponseDto response = new FarmResponseDto(farmId, "Fazenda", "Cuiabá", 1500.50, orgId);
+            FarmResponse response = new FarmResponse(farmId, "Fazenda", "Cuiabá", 1500.50, orgId);
 
             given(farmService.getFarmById(farmId)).willReturn(response);
 
@@ -151,9 +157,9 @@ class FarmControllerTest {
         void shouldReturn200AndPageOfFarms() {
             // Arrange
             UUID orgId = UUID.randomUUID();
-            FarmResponseDto dto = new FarmResponseDto(UUID.randomUUID(), "Fazenda Santa Cruz", "Sinop", 2000.0, orgId);
+            FarmResponse dto = new FarmResponse(UUID.randomUUID(), "Fazenda Santa Cruz", "Sinop", 2000.0, orgId);
 
-            Page<FarmResponseDto> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 10), 1);
+            Page<FarmResponse> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 10), 1);
 
             given(farmService.getAllFarmsByOrganization(eq(orgId), any(Pageable.class))).willReturn(page);
 
@@ -182,10 +188,10 @@ class FarmControllerTest {
             UUID farmId = UUID.randomUUID();
             UUID orgId = UUID.randomUUID();
 
-            FarmUpdateRequestDto request = new FarmUpdateRequestDto("Fazenda Atualizada", "Sinop", 2500.0);
-            FarmResponseDto response = new FarmResponseDto(farmId, "Fazenda Atualizada", "Sinop", 2500.0, orgId);
+            FarmUpdateRequest request = new FarmUpdateRequest("Fazenda Atualizada", "Sinop", 2500.0);
+            FarmResponse response = new FarmResponse(farmId, "Fazenda Atualizada", "Sinop", 2500.0, orgId);
 
-            given(farmService.updateFarm(eq(farmId), any(FarmUpdateRequestDto.class))).willReturn(response);
+            given(farmService.updateFarm(eq(farmId), any(FarmUpdateRequest.class))).willReturn(response);
 
             // Act & Assert
             assertThat(
@@ -205,9 +211,9 @@ class FarmControllerTest {
         void shouldReturn404WhenUpdatingInvalidFarm() {
             // Arrange
             UUID invalidId = UUID.randomUUID();
-            FarmUpdateRequestDto request = new FarmUpdateRequestDto("Fazenda Atualizada", "Sinop", 2500.0);
+            FarmUpdateRequest request = new FarmUpdateRequest("Fazenda Atualizada", "Sinop", 2500.0);
 
-            given(farmService.updateFarm(eq(invalidId), any(FarmUpdateRequestDto.class)))
+            given(farmService.updateFarm(eq(invalidId), any(FarmUpdateRequest.class)))
                     .willThrow(new FarmNotFoundException("Fazenda não encontrada."));
 
             // Act & Assert
@@ -224,7 +230,7 @@ class FarmControllerTest {
         void shouldReturn400WhenUpdatingFarmWithInvalidBody() {
             // Arrange
             UUID farmId = UUID.randomUUID();
-            FarmUpdateRequestDto invalidRequest = new FarmUpdateRequestDto("", "", -10.0);
+            FarmUpdateRequest invalidRequest = new FarmUpdateRequest("", "", -10.0);
 
             // Act & Assert
             assertThat(

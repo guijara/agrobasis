@@ -1,8 +1,14 @@
 package com.agrobasis.core_service.plot;
 
-import com.agrobasis.core_service.farm.Farm;
-import com.agrobasis.core_service.farm.FarmNotFoundException;
-import com.agrobasis.core_service.farm.FarmRepository;
+import com.agrobasis.core_service.farm.application.PlotService;
+import com.agrobasis.core_service.farm.domain.Farm;
+import com.agrobasis.core_service.farm.domain.FarmNotFoundException;
+import com.agrobasis.core_service.farm.infrastructure.FarmRepository;
+import com.agrobasis.core_service.farm.api.dto.PlotCreateRequest;
+import com.agrobasis.core_service.farm.api.dto.PlotResponse;
+import com.agrobasis.core_service.farm.api.dto.PlotUpdateRequest;
+import com.agrobasis.core_service.farm.domain.Plot;
+import com.agrobasis.core_service.farm.infrastructure.PlotRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -44,7 +50,7 @@ class PlotServiceTest {
         @DisplayName("Should create plot successfully")
         void shouldCreatePlotSuccessfully() {
             UUID farmId = UUID.randomUUID();
-            PlotCreateRequestDto request = new PlotCreateRequestDto("Talhão", 50.0, farmId);
+            PlotCreateRequest request = new PlotCreateRequest("Talhão", 50.0, farmId);
 
             Farm mockFarm = new Farm();
             mockFarm.setId(farmId);
@@ -52,7 +58,7 @@ class PlotServiceTest {
             when(farmRepository.findById(farmId)).thenReturn(Optional.of(mockFarm));
             when(plotRepository.save(any(Plot.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-            PlotResponseDto result = plotService.createPlot(request);
+            PlotResponse result = plotService.createPlot(request);
 
             assertThat(result.name()).isEqualTo("Talhão");
             assertThat(result.farmId()).isEqualTo(farmId);
@@ -63,7 +69,7 @@ class PlotServiceTest {
         @DisplayName("Should throw exception when farm not found")
         void shouldThrowExceptionWhenFarmNotFound() {
             UUID farmId = UUID.randomUUID();
-            PlotCreateRequestDto request = new PlotCreateRequestDto("T1", 10.0, farmId);
+            PlotCreateRequest request = new PlotCreateRequest("T1", 10.0, farmId);
 
             when(farmRepository.findById(farmId)).thenReturn(Optional.empty());
 
@@ -87,7 +93,7 @@ class PlotServiceTest {
 
             when(plotRepository.findById(id)).thenReturn(Optional.of(plot));
 
-            PlotResponseDto result = plotService.getPlotById(id);
+            PlotResponse result = plotService.getPlotById(id);
 
             assertThat(result.id()).isEqualTo(id);
             assertThat(result.name()).isEqualTo("Talhão");
@@ -109,7 +115,7 @@ class PlotServiceTest {
             Page<Plot> page = new PageImpl<>(List.of(plot), pageable, 1);
             when(plotRepository.findAllByFarm_Id(eq(farmId), any(Pageable.class))).thenReturn(page);
 
-            Page<PlotResponseDto> result = plotService.getAllPlotsByOrganization(farmId, pageable);
+            Page<PlotResponse> result = plotService.getAllPlotsByOrganization(farmId, pageable);
 
             assertThat(result.getTotalElements()).isEqualTo(1);
             verify(plotRepository).findAllByFarm_Id(farmId, pageable);
@@ -128,10 +134,10 @@ class PlotServiceTest {
             existingPlot.setId(id);
             existingPlot.setFarm(new Farm());
 
-            PlotUpdateRequestDto request = new PlotUpdateRequestDto("Nome Atualizado", 75.0);
+            PlotUpdateRequest request = new PlotUpdateRequest("Nome Atualizado", 75.0);
             when(plotRepository.findById(id)).thenReturn(Optional.of(existingPlot));
 
-            PlotResponseDto result = plotService.updatePlot(id, request);
+            PlotResponse result = plotService.updatePlot(id, request);
 
             assertThat(result.name()).isEqualTo("Nome Atualizado");
             assertThat(result.hectareArea()).isEqualTo(75.0);

@@ -1,5 +1,10 @@
 package com.agrobasis.core_service.plot;
 
+import com.agrobasis.core_service.farm.api.PlotController;
+import com.agrobasis.core_service.farm.api.dto.PlotCreateRequest;
+import com.agrobasis.core_service.farm.api.dto.PlotResponse;
+import com.agrobasis.core_service.farm.api.dto.PlotUpdateRequest;
+import com.agrobasis.core_service.farm.application.PlotService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,8 +43,8 @@ class PlotControllerTest {
     class CreatePlotTests {
         @Test
         void shouldReturn201OnCreation() throws Exception {
-            PlotCreateRequestDto request = new PlotCreateRequestDto("T1", 10.0, UUID.randomUUID());
-            PlotResponseDto response = new PlotResponseDto(UUID.randomUUID(), "T1", 10.0, request.farmId());
+            PlotCreateRequest request = new PlotCreateRequest("T1", 10.0, UUID.randomUUID());
+            PlotResponse response = new PlotResponse(UUID.randomUUID(), "T1", 10.0, request.farmId());
 
             given(plotService.createPlot(any())).willReturn(response);
 
@@ -56,7 +61,7 @@ class PlotControllerTest {
         @Test
         void shouldReturn200IfFound() {
             UUID id = UUID.randomUUID();
-            given(plotService.getPlotById(id)).willReturn(new PlotResponseDto(id, "T1", 10.0, UUID.randomUUID()));
+            given(plotService.getPlotById(id)).willReturn(new PlotResponse(id, "T1", 10.0, UUID.randomUUID()));
 
             assertThat(mockMvc.get().uri("/api/plot/{id}", id))
                     .hasStatus(HttpStatus.OK);
@@ -84,8 +89,8 @@ class PlotControllerTest {
         @Test
         void shouldReturn200OnUpdate() throws Exception {
             UUID id = UUID.randomUUID();
-            PlotUpdateRequestDto request = new PlotUpdateRequestDto("Novo", 20.0);
-            given(plotService.updatePlot(eq(id), any())).willReturn(new PlotResponseDto(id, "Novo", 20.0, UUID.randomUUID()));
+            PlotUpdateRequest request = new PlotUpdateRequest("Novo", 20.0);
+            given(plotService.updatePlot(eq(id), any())).willReturn(new PlotResponse(id, "Novo", 20.0, UUID.randomUUID()));
 
             assertThat(mockMvc.put().uri("/api/plot/{id}", id)
                     .contentType(MediaType.APPLICATION_JSON)

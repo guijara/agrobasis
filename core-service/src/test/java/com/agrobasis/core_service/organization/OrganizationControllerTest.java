@@ -1,5 +1,9 @@
 package com.agrobasis.core_service.organization;
 
+import com.agrobasis.core_service.organization.api.OrganizationController;
+import com.agrobasis.core_service.organization.api.dto.OrganizationRequest;
+import com.agrobasis.core_service.organization.api.dto.OrganizationResponse;
+import com.agrobasis.core_service.organization.application.OrganizationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,12 +52,12 @@ class OrganizationControllerTest {
             String location = "Cuiabá";
             UUID generatedId = UUID.randomUUID();
 
-            OrganizationRequestDto request = new OrganizationRequestDto(name, cnpj, location);
-            OrganizationResponseDto response = new OrganizationResponseDto(
+            OrganizationRequest request = new OrganizationRequest(name, cnpj, location);
+            OrganizationResponse response = new OrganizationResponse(
                     generatedId, name, cnpj, location, LocalDateTime.now()
             );
 
-            given(organizationService.createOrganization(any(OrganizationRequestDto.class)))
+            given(organizationService.createOrganization(any(OrganizationRequest.class)))
                     .willReturn(response);
 
             // Act & Assert
@@ -73,7 +77,7 @@ class OrganizationControllerTest {
         @DisplayName("Should return 400 when request body is invalid")
         void shouldReturn400WhenRequestBodyIsInvalid() {
             // Arrange
-            OrganizationRequestDto invalidRequest = new OrganizationRequestDto("", "", "");
+            OrganizationRequest invalidRequest = new OrganizationRequest("", "", "");
 
             // Act & Assert
             assertThat(
@@ -88,9 +92,9 @@ class OrganizationControllerTest {
         @DisplayName("Should return 500 when service throws unexpected exception")
         void shouldReturn500WhenServiceThrowsException() {
             // Arrange
-            OrganizationRequestDto request = new OrganizationRequestDto("AgroTech", "00.000.000/0000-00", "Cuiabá");
+            OrganizationRequest request = new OrganizationRequest("AgroTech", "00.000.000/0000-00", "Cuiabá");
 
-            given(organizationService.createOrganization(any(OrganizationRequestDto.class)))
+            given(organizationService.createOrganization(any(OrganizationRequest.class)))
                     .willThrow(new RuntimeException("Unexpected error"));
 
             // Act & Assert
@@ -112,11 +116,11 @@ class OrganizationControllerTest {
         void shouldReturn200AndPageOfOrganizations() {
             // Arrange
             UUID id = UUID.randomUUID();
-            OrganizationResponseDto dto = new OrganizationResponseDto(
+            OrganizationResponse dto = new OrganizationResponse(
                     id, "AgroTech", "00.000.000/0000-00", "Cuiabá", LocalDateTime.now()
             );
 
-            Page<OrganizationResponseDto> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 10), 1);
+            Page<OrganizationResponse> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 10), 1);
 
             given(organizationService.getAllOrganizations(any(Pageable.class))).willReturn(page);
 
@@ -137,7 +141,7 @@ class OrganizationControllerTest {
         @DisplayName("Should return empty page when no organizations exist")
         void shouldReturnEmptyPageWhenNoData() {
             // Arrange
-            Page<OrganizationResponseDto> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0);
+            Page<OrganizationResponse> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0);
             given(organizationService.getAllOrganizations(any(Pageable.class))).willReturn(emptyPage);
 
             // Act & Assert

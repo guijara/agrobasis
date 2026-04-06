@@ -1,5 +1,7 @@
 package com.agrobasis.core_service.organization;
 
+import com.agrobasis.core_service.organization.domain.Organization;
+import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
