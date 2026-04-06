@@ -1,6 +1,6 @@
 package com.agrobasis.core_service.identity.application;
 
-import com.agrobasis.core_service.identity.api.dto.UserRequest;
+import com.agrobasis.core_service.identity.api.dto.UserCreateRequest;
 import com.agrobasis.core_service.identity.api.dto.UserResponse;
 import com.agrobasis.core_service.identity.api.dto.UserUpdateRequest;
 import com.agrobasis.core_service.identity.domain.User;
@@ -55,7 +55,7 @@ class UserServiceTest {
         void shouldCreateUserSuccessfully() {
             UUID userId = UUID.randomUUID();
             UUID organizationId = UUID.randomUUID();
-            UserRequest request = new UserRequest(
+            UserCreateRequest request = new UserCreateRequest(
                     "Guilherme",
                     "guilherme@email.com",
                     "Senha123",
@@ -85,6 +85,8 @@ class UserServiceTest {
             assertThat(result.email()).isEqualTo("guilherme@email.com");
             assertThat(result.role()).isEqualTo(UserRole.ADMIN);
             assertThat(result.organizationId()).isEqualTo(organizationId);
+            verify(userRepository).existsByEmail(request.email());
+            verify(organizationRepository).findById(organizationId);
             verify(userRepository).save(any(User.class));
         }
 
@@ -92,7 +94,7 @@ class UserServiceTest {
         @DisplayName("Should throw exception when email already exists")
         void shouldThrowExceptionWhenEmailAlreadyExists() {
             UUID organizationId = UUID.randomUUID();
-            UserRequest request = new UserRequest(
+            UserCreateRequest request = new UserCreateRequest(
                     "Guilherme",
                     "guilherme@email.com",
                     "Senha123",
@@ -104,8 +106,9 @@ class UserServiceTest {
 
             assertThatThrownBy(() -> userService.createUser(request))
                     .isInstanceOf(UserEmailAlreadyExistsException.class)
-                    .hasMessage("O email guilherme@email.com já existe.");
+                    .hasMessage("O email guilherme@email.com já existe");
 
+            verify(userRepository).existsByEmail(request.email());
             verify(organizationRepository, never()).findById(any(UUID.class));
             verify(userRepository, never()).save(any(User.class));
         }
@@ -114,7 +117,7 @@ class UserServiceTest {
         @DisplayName("Should throw exception when organization is not found")
         void shouldThrowExceptionWhenOrganizationIsNotFound() {
             UUID organizationId = UUID.randomUUID();
-            UserRequest request = new UserRequest(
+            UserCreateRequest request = new UserCreateRequest(
                     "Guilherme",
                     "guilherme@email.com",
                     "Senha123",
@@ -129,6 +132,8 @@ class UserServiceTest {
                     .isInstanceOf(OrganizationNotFoundException.class)
                     .hasMessage("Organização não encontrada.");
 
+            verify(userRepository).existsByEmail(request.email());
+            verify(organizationRepository).findById(organizationId);
             verify(userRepository, never()).save(any(User.class));
         }
     }
@@ -162,6 +167,7 @@ class UserServiceTest {
             assertThat(result.email()).isEqualTo("guilherme@email.com");
             assertThat(result.role()).isEqualTo(UserRole.OPERATOR);
             assertThat(result.organizationId()).isEqualTo(organizationId);
+            verify(userRepository).findById(userId);
         }
 
         @Test
@@ -174,6 +180,8 @@ class UserServiceTest {
             assertThatThrownBy(() -> userService.findUserById(userId))
                     .isInstanceOf(UserNotFoundException.class)
                     .hasMessage("Usuário não encontrado.");
+
+            verify(userRepository).findById(userId);
         }
     }
 
@@ -244,6 +252,8 @@ class UserServiceTest {
             assertThat(result.email()).isEqualTo("novo@email.com");
             assertThat(result.role()).isEqualTo(UserRole.ADMIN);
             assertThat(result.organizationId()).isEqualTo(organizationId);
+            verify(userRepository).findById(userId);
+            verify(userRepository).existsByEmailAndIdNot(request.email(), userId);
             verify(userRepository).save(user);
         }
 
@@ -259,6 +269,7 @@ class UserServiceTest {
                     .isInstanceOf(UserNotFoundException.class)
                     .hasMessage("Usuário não encontrado.");
 
+            verify(userRepository).findById(userId);
             verify(userRepository, never()).existsByEmailAndIdNot(any(String.class), any(UUID.class));
             verify(userRepository, never()).save(any(User.class));
         }
@@ -285,8 +296,10 @@ class UserServiceTest {
 
             assertThatThrownBy(() -> userService.updateUser(userId, request))
                     .isInstanceOf(UserEmailAlreadyExistsException.class)
-                    .hasMessage("O email novo@email.com já existe.");
+                    .hasMessage("O email novo@email.com já existe");
 
+            verify(userRepository).findById(userId);
+            verify(userRepository).existsByEmailAndIdNot(request.email(), userId);
             verify(userRepository, never()).save(any(User.class));
         }
     }
@@ -307,6 +320,7 @@ class UserServiceTest {
 
             userService.deleteUser(userId);
 
+            verify(userRepository).findById(userId);
             verify(userRepository).delete(user);
         }
 
@@ -321,6 +335,7 @@ class UserServiceTest {
                     .isInstanceOf(UserNotFoundException.class)
                     .hasMessage("Usuário não encontrado.");
 
+            verify(userRepository).findById(userId);
             verify(userRepository, never()).delete(any(User.class));
         }
     }

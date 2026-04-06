@@ -3,7 +3,7 @@ package com.agrobasis.core_service.identity.application;
 import com.agrobasis.core_service.organization.domain.Organization;
 import com.agrobasis.core_service.organization.domain.exception.OrganizationNotFoundException;
 import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
-import com.agrobasis.core_service.identity.api.dto.UserRequest;
+import com.agrobasis.core_service.identity.api.dto.UserCreateRequest;
 import com.agrobasis.core_service.identity.api.dto.UserResponse;
 import com.agrobasis.core_service.identity.api.dto.UserUpdateRequest;
 import com.agrobasis.core_service.identity.domain.User;
@@ -25,7 +25,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
 
-    public UserResponse createUser(UserRequest request){
+    public UserResponse createUser(UserCreateRequest request){
         boolean exists = userRepository.existsByEmail(request.email());
 
         if (exists){

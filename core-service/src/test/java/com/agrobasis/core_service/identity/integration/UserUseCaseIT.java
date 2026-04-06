@@ -3,7 +3,7 @@ package com.agrobasis.core_service.identity.integration;
 import com.agrobasis.core_service.shared.api.error.ErrorResponse;
 import com.agrobasis.core_service.organization.domain.Organization;
 import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
-import com.agrobasis.core_service.identity.api.dto.UserRequest;
+import com.agrobasis.core_service.identity.api.dto.UserCreateRequest;
 import com.agrobasis.core_service.identity.api.dto.UserResponse;
 import com.agrobasis.core_service.identity.api.dto.UserUpdateRequest;
 import com.agrobasis.core_service.identity.domain.User;
@@ -68,7 +68,7 @@ class UserUseCaseIT {
         @DisplayName("Deve criar um usuário com sucesso e não retornar a senha")
         void shouldCreateUserSuccessfully() {
             // Arrange
-            UserRequest request = new UserRequest(
+            UserCreateRequest request = new UserCreateRequest(
                     "Guilherme",
                     "guilherme@agrotech.com",
                     "SenhaForte123",
@@ -106,7 +106,7 @@ class UserUseCaseIT {
             existingUser.setOrganization(organizationRepository.getReferenceById(savedOrgId));
             userRepository.save(existingUser);
 
-            UserRequest conflictRequest = new UserRequest(
+            UserCreateRequest conflictRequest = new UserCreateRequest(
                     "Guilherme Clone",
                     "guilherme@agrotech.com",
                     "NovaSenha123",

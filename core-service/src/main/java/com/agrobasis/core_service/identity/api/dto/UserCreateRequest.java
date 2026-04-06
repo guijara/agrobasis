@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
 
-public record UserRequest(
+public record UserCreateRequest(
         @Schema(description = "Nome do usuário",example = "Guilherme")
         @NotBlank(message = "O nome é obrigatório") String name,
         @Schema(description = "Email do usuário",example = "guilherme@gmail.com")

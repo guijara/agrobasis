@@ -1,6 +1,6 @@
 package com.agrobasis.core_service.identity.api;
 
-import com.agrobasis.core_service.identity.api.dto.UserRequest;
+import com.agrobasis.core_service.identity.api.dto.UserCreateRequest;
 import com.agrobasis.core_service.identity.api.dto.UserResponse;
 import com.agrobasis.core_service.identity.api.dto.UserUpdateRequest;
 import com.agrobasis.core_service.shared.api.doc.ApiStandardErrors;
@@ -33,7 +33,7 @@ public class UserController {
     @Operation(summary = "Registra um novo usuário")
     @ApiResponse(responseCode = "201", description = "Usuário criado com sucesso")
     @PostMapping
-    public ResponseEntity<UserResponse> postUser(@Valid @RequestBody UserRequest request) {
+    public ResponseEntity<UserResponse> postUser(@Valid @RequestBody UserCreateRequest request) {
         UserResponse response = userService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
