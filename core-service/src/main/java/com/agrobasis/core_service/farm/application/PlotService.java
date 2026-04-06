@@ -1,13 +1,13 @@
 package com.agrobasis.core_service.farm.application;
 
 import com.agrobasis.core_service.farm.domain.Farm;
-import com.agrobasis.core_service.farm.domain.FarmNotFoundException;
+import com.agrobasis.core_service.farm.domain.exception.FarmNotFoundException;
 import com.agrobasis.core_service.farm.infrastructure.FarmRepository;
 import com.agrobasis.core_service.farm.api.dto.PlotCreateRequest;
 import com.agrobasis.core_service.farm.api.dto.PlotResponse;
 import com.agrobasis.core_service.farm.api.dto.PlotUpdateRequest;
 import com.agrobasis.core_service.farm.domain.Plot;
-import com.agrobasis.core_service.farm.domain.PlotNotFoundException;
+import com.agrobasis.core_service.farm.domain.exception.PlotNotFoundException;
 import com.agrobasis.core_service.farm.infrastructure.PlotRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

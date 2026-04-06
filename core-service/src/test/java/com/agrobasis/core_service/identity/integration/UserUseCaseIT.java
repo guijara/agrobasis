@@ -1,4 +1,4 @@
-package com.agrobasis.core_service.identity;
+package com.agrobasis.core_service.identity.integration;
 
 import com.agrobasis.core_service.shared.api.error.ErrorResponse;
 import com.agrobasis.core_service.organization.domain.Organization;
@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class UserUseCaseTest {
+class UserUseCaseIT {
 
     @LocalServerPort
     private int port;

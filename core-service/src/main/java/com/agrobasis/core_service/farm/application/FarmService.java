@@ -4,7 +4,7 @@ import com.agrobasis.core_service.farm.api.dto.FarmCreateRequest;
 import com.agrobasis.core_service.farm.api.dto.FarmResponse;
 import com.agrobasis.core_service.farm.api.dto.FarmUpdateRequest;
 import com.agrobasis.core_service.farm.domain.Farm;
-import com.agrobasis.core_service.farm.domain.FarmNotFoundException;
+import com.agrobasis.core_service.farm.domain.exception.FarmNotFoundException;
 import com.agrobasis.core_service.farm.infrastructure.FarmRepository;
 import com.agrobasis.core_service.organization.domain.Organization;
 import com.agrobasis.core_service.organization.domain.exception.OrganizationNotFoundException;
@@ -36,14 +36,14 @@ public class FarmService {
         farm.setOrganization(organization);
         farm.setHectareArea(request.hectareArea());
 
-        farmRepository.save(farm);
+        Farm savedFarm = farmRepository.save(farm);
 
         return new FarmResponse(
-                farm.getId(),
-                farm.getName(),
-                farm.getLocation(),
-                farm.getHectareArea(),
-                farm.getOrganization().getId()
+                savedFarm.getId(),
+                savedFarm.getName(),
+                savedFarm.getLocation(),
+                savedFarm.getHectareArea(),
+                savedFarm.getOrganization().getId()
         );
     }
 

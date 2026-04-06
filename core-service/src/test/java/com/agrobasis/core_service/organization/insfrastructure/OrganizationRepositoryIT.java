@@ -1,4 +1,4 @@
-package com.agrobasis.core_service.organization;
+package com.agrobasis.core_service.organization.insfrastructure;
 
 import com.agrobasis.core_service.organization.domain.Organization;
 import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
@@ -11,7 +11,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-public class OrganizationRepositoryTest {
+public class OrganizationRepositoryIT {
     @Autowired
     private OrganizationRepository repository;
 

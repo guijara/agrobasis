@@ -1,14 +1,11 @@
-package com.agrobasis.core_service.plot;
+package com.agrobasis.core_service.farm.application;
 
-import com.agrobasis.core_service.farm.application.PlotService;
 import com.agrobasis.core_service.farm.domain.Farm;
-import com.agrobasis.core_service.farm.domain.FarmNotFoundException;
-import com.agrobasis.core_service.farm.infrastructure.FarmRepository;
+import com.agrobasis.core_service.farm.domain.exception.FarmNotFoundException;
 import com.agrobasis.core_service.farm.api.dto.PlotCreateRequest;
 import com.agrobasis.core_service.farm.api.dto.PlotResponse;
 import com.agrobasis.core_service.farm.api.dto.PlotUpdateRequest;
 import com.agrobasis.core_service.farm.domain.Plot;
-import com.agrobasis.core_service.farm.infrastructure.PlotRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -20,6 +17,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import com.agrobasis.core_service.farm.infrastructure.FarmRepository;
+import com.agrobasis.core_service.farm.infrastructure.PlotRepository;
 
 import java.util.List;
 import java.util.Optional;

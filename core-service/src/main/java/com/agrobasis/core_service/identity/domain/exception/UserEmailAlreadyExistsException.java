@@ -1,4 +1,4 @@
-package com.agrobasis.core_service.identity.domain;
+package com.agrobasis.core_service.identity.domain.exception;
 
 public class UserEmailAlreadyExistsException extends RuntimeException {
     public UserEmailAlreadyExistsException(String message) {

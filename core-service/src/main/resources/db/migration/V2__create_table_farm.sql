@@ -4,7 +4,7 @@ CREATE TABLE farm (
       location VARCHAR(255) NOT NULL,
       hectare_area NUMERIC(10, 2) NOT NULL,
       organization_id UUID NOT NULL,
-      created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+      created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 
       CONSTRAINT fk_farm_organization
           FOREIGN KEY (organization_id)

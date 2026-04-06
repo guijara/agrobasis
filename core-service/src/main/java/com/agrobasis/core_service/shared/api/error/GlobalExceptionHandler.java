@@ -1,11 +1,11 @@
 package com.agrobasis.core_service.shared.api.error;
 
-import com.agrobasis.core_service.farm.domain.FarmNotFoundException;
+import com.agrobasis.core_service.farm.domain.exception.FarmNotFoundException;
 import com.agrobasis.core_service.organization.domain.exception.OrganizationAlreadyExistsException;
 import com.agrobasis.core_service.organization.domain.exception.OrganizationNotFoundException;
-import com.agrobasis.core_service.farm.domain.PlotNotFoundException;
-import com.agrobasis.core_service.identity.domain.UserNotFoundException;
-import com.agrobasis.core_service.identity.domain.UserEmailAlreadyExistsException;
+import com.agrobasis.core_service.farm.domain.exception.PlotNotFoundException;
+import com.agrobasis.core_service.identity.domain.exception.UserNotFoundException;
+import com.agrobasis.core_service.identity.domain.exception.UserEmailAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

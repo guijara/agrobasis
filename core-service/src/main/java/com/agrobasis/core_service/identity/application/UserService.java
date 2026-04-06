@@ -7,8 +7,8 @@ import com.agrobasis.core_service.identity.api.dto.UserRequest;
 import com.agrobasis.core_service.identity.api.dto.UserResponse;
 import com.agrobasis.core_service.identity.api.dto.UserUpdateRequest;
 import com.agrobasis.core_service.identity.domain.User;
-import com.agrobasis.core_service.identity.domain.UserEmailAlreadyExistsException;
-import com.agrobasis.core_service.identity.domain.UserNotFoundException;
+import com.agrobasis.core_service.identity.domain.exception.UserEmailAlreadyExistsException;
+import com.agrobasis.core_service.identity.domain.exception.UserNotFoundException;
 import com.agrobasis.core_service.identity.infrastructure.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -42,14 +42,14 @@ public class UserService {
         user.setPassword(request.password());
         user.setOrganization(organization);
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
         return new UserResponse(
-            user.getId(),
-            user.getName(),
-            user.getEmail(),
-            user.getRole(),
-            user.getOrganization().getId()
+            savedUser.getId(),
+            savedUser.getName(),
+            savedUser.getEmail(),
+            savedUser.getRole(),
+            savedUser.getOrganization().getId()
         );
     }
 

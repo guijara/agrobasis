@@ -5,7 +5,7 @@ CREATE TABLE users (
        password VARCHAR(255) NOT NULL,
        role VARCHAR(50) NOT NULL,
        organization_id UUID NOT NULL,
-       created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+       created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 
        CONSTRAINT fk_user_organization
            FOREIGN KEY (organization_id)

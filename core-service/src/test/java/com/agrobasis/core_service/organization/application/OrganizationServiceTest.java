@@ -1,8 +1,7 @@
-package com.agrobasis.core_service.organization;
+package com.agrobasis.core_service.organization.application;
 
 import com.agrobasis.core_service.organization.api.dto.OrganizationRequest;
 import com.agrobasis.core_service.organization.api.dto.OrganizationResponse;
-import com.agrobasis.core_service.organization.application.OrganizationService;
 import com.agrobasis.core_service.organization.domain.Organization;
 import com.agrobasis.core_service.organization.domain.exception.OrganizationAlreadyExistsException;
 import com.agrobasis.core_service.organization.domain.exception.OrganizationNotFoundException;
