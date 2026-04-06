@@ -33,7 +33,7 @@ public class UserService {
         }
 
         Organization organization = organizationRepository.findById(request.organizationId()).orElseThrow(
-                () -> new OrganizationNotFoundException("A Organização não encontrada."));
+                () -> new OrganizationNotFoundException("Organização não encontrada."));
 
         User user = new User();
         user.setName(request.name());
@@ -82,7 +82,7 @@ public class UserService {
     @Transactional
     public UserResponse updateUser(UUID id, UserUpdateRequest request){
         User user = userRepository.findById(id).orElseThrow(
-                () -> new UserNotFoundException("Usuário não encontrado"));
+                () -> new UserNotFoundException("Usuário não encontrado."));
 
         boolean emailExists = userRepository.existsByEmailAndIdNot(request.email(),id);
 

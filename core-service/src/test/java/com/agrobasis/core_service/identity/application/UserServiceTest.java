@@ -104,7 +104,7 @@ class UserServiceTest {
 
             assertThatThrownBy(() -> userService.createUser(request))
                     .isInstanceOf(UserEmailAlreadyExistsException.class)
-                    .hasMessage("O email guilherme@email.com já existe");
+                    .hasMessage("O email guilherme@email.com já existe.");
 
             verify(organizationRepository, never()).findById(any(UUID.class));
             verify(userRepository, never()).save(any(User.class));
@@ -127,7 +127,7 @@ class UserServiceTest {
 
             assertThatThrownBy(() -> userService.createUser(request))
                     .isInstanceOf(OrganizationNotFoundException.class)
-                    .hasMessage("A Organização não encontrada.");
+                    .hasMessage("Organização não encontrada.");
 
             verify(userRepository, never()).save(any(User.class));
         }
@@ -257,7 +257,7 @@ class UserServiceTest {
 
             assertThatThrownBy(() -> userService.updateUser(userId, request))
                     .isInstanceOf(UserNotFoundException.class)
-                    .hasMessage("Usuário não encontrado");
+                    .hasMessage("Usuário não encontrado.");
 
             verify(userRepository, never()).existsByEmailAndIdNot(any(String.class), any(UUID.class));
             verify(userRepository, never()).save(any(User.class));
@@ -285,7 +285,7 @@ class UserServiceTest {
 
             assertThatThrownBy(() -> userService.updateUser(userId, request))
                     .isInstanceOf(UserEmailAlreadyExistsException.class)
-                    .hasMessage("O email novo@email.com já existe");
+                    .hasMessage("O email novo@email.com já existe.");
 
             verify(userRepository, never()).save(any(User.class));
         }
