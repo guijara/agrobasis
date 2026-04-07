@@ -22,6 +22,10 @@ public class Plot {
     @Column(name = "hectare_area", nullable = false, columnDefinition = "numeric(10,2)")
     private Double hectareArea;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Commodity commodity;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "farm_id", nullable = false)
     private Farm farm;

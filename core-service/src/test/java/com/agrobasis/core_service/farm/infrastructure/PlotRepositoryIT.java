@@ -2,6 +2,7 @@ package com.agrobasis.core_service.farm.infrastructure;
 
 import com.agrobasis.core_service.farm.domain.Farm;
 import com.agrobasis.core_service.farm.domain.Plot;
+import com.agrobasis.core_service.farm.domain.Commodity;
 import com.agrobasis.core_service.organization.domain.Organization;
 import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -37,6 +38,7 @@ class PlotRepositoryIT {
         Plot plot = new Plot();
         plot.setName("Talhao 01");
         plot.setHectareArea(150.0);
+        plot.setCommodity(Commodity.SOYBEAN);
         plot.setFarm(farm);
 
         Plot savedPlot = plotRepository.save(plot);
@@ -44,6 +46,7 @@ class PlotRepositoryIT {
         assertThat(savedPlot.getId()).isNotNull();
         assertThat(savedPlot.getName()).isEqualTo("Talhao 01");
         assertThat(savedPlot.getHectareArea()).isEqualTo(150.0);
+        assertThat(savedPlot.getCommodity()).isEqualTo(Commodity.SOYBEAN);
         assertThat(savedPlot.getFarm().getId()).isEqualTo(farm.getId());
     }
 
@@ -54,9 +57,9 @@ class PlotRepositoryIT {
         Farm targetFarm = createFarm("Fazenda Boa Terra", "Cuiaba", 1200.0, organization);
         Farm otherFarm = createFarm("Fazenda Horizonte", "Sinop", 980.0, organization);
 
-        plotRepository.save(createPlot("Talhao Norte", 120.0, targetFarm));
-        plotRepository.save(createPlot("Talhao Sul", 130.0, targetFarm));
-        plotRepository.save(createPlot("Talhao Externo", 140.0, otherFarm));
+        plotRepository.save(createPlot("Talhao Norte", 120.0, Commodity.SOYBEAN, targetFarm));
+        plotRepository.save(createPlot("Talhao Sul", 130.0, Commodity.CORN, targetFarm));
+        plotRepository.save(createPlot("Talhao Externo", 140.0, Commodity.SOYBEAN, otherFarm));
 
         Pageable pageable = PageRequest.of(0, 10);
 
@@ -89,10 +92,11 @@ class PlotRepositoryIT {
         return farmRepository.save(farm);
     }
 
-    private Plot createPlot(String name, Double hectareArea, Farm farm) {
+    private Plot createPlot(String name, Double hectareArea, Commodity commodity, Farm farm) {
         Plot plot = new Plot();
         plot.setName(name);
         plot.setHectareArea(hectareArea);
+        plot.setCommodity(commodity);
         plot.setFarm(farm);
         return plot;
     }

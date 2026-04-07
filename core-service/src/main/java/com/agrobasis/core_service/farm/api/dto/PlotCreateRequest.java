@@ -1,5 +1,6 @@
 package com.agrobasis.core_service.farm.api.dto;
 
+import com.agrobasis.core_service.farm.domain.Commodity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,6 +17,10 @@ public record PlotCreateRequest(
         @NotNull(message = "A área em hectares é obrigatória")
         @Positive(message = "A área deve ser maior que zero")
         Double hectareArea,
+
+        @Schema(description = "Commodity do talhão", example = "SOYBEAN")
+        @NotNull(message = "A commodity é obrigatória")
+        Commodity commodity,
 
         @Schema(description = "ID da fazenda vinculada")
         @NotNull(message = "O ID da fazenda é obrigatório")

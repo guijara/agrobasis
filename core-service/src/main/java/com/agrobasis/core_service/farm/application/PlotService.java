@@ -32,6 +32,7 @@ public class PlotService {
         Plot newPlot = new Plot();
         newPlot.setName(plotCreateRequest.name());
         newPlot.setHectareArea(plotCreateRequest.hectareArea());
+        newPlot.setCommodity(plotCreateRequest.commodity());
         newPlot.setFarm(farm);
 
         plotRepository.save(newPlot);
@@ -40,6 +41,7 @@ public class PlotService {
                 newPlot.getId(),
                 newPlot.getName(),
                 newPlot.getHectareArea(),
+                newPlot.getCommodity(),
                 newPlot.getFarm().getId()
         );
     }
@@ -52,6 +54,7 @@ public class PlotService {
                 plot.getId(),
                 plot.getName(),
                 plot.getHectareArea(),
+                plot.getCommodity(),
                 plot.getFarm().getId()
 
         );
@@ -64,6 +67,7 @@ public class PlotService {
                 plot.getId(),
                 plot.getName(),
                 plot.getHectareArea(),
+                plot.getCommodity(),
                 plot.getFarm().getId()
         ));
     }
@@ -75,12 +79,14 @@ public class PlotService {
 
         plot.setName(plotUpdateRequest.name());
         plot.setHectareArea(plotUpdateRequest.hectareArea());
+        plot.setCommodity(plotUpdateRequest.commodity());
         plotRepository.save(plot);
 
         return new PlotResponse(
             plot.getId(),
             plot.getName(),
             plot.getHectareArea(),
+            plot.getCommodity(),
             plot.getFarm().getId()
         );
     }
