@@ -6,6 +6,8 @@ import com.agrobasis.core_service.organization.domain.exception.OrganizationNotF
 import com.agrobasis.core_service.farm.domain.exception.PlotNotFoundException;
 import com.agrobasis.core_service.identity.domain.exception.UserNotFoundException;
 import com.agrobasis.core_service.identity.domain.exception.UserEmailAlreadyExistsException;
+import com.agrobasis.core_service.market.domain.exception.ExchangeRateNotFoundException;
+import com.agrobasis.core_service.market.domain.exception.MarketQuoteNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -90,6 +92,32 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
+                e.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(MarketQuoteNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleMarketQuoteNotFoundException(MarketQuoteNotFoundException e, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                e.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(ExchangeRateNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleExchangeRateNotFoundException(ExchangeRateNotFoundException e, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
                 e.getMessage(),
                 request.getRequestURI(),
                 null
