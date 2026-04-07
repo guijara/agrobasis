@@ -62,6 +62,23 @@ class ExchangeRateRepositoryIT {
                 .containsOnly(Currency.BRL);
     }
 
+    @Test
+    @DisplayName("Should find latest exchange rate by currency pair")
+    void shouldFindLatestExchangeRateByCurrencyPair() {
+        exchangeRateRepository.save(createExchangeRate(Currency.USD, Currency.BRL, "5.421300", "Banco Central", LocalDateTime.of(2026, 4, 7, 10, 0)));
+        exchangeRateRepository.save(createExchangeRate(Currency.USD, Currency.BRL, "5.389100", "AwesomeAPI", LocalDateTime.of(2026, 4, 7, 11, 0)));
+        exchangeRateRepository.save(createExchangeRate(Currency.BRL, Currency.USD, "0.185000", "Banco Central", LocalDateTime.of(2026, 4, 7, 12, 0)));
+
+        ExchangeRate result = exchangeRateRepository
+                .findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL)
+                .orElseThrow();
+
+        assertThat(result.getFromCurrency()).isEqualTo(Currency.USD);
+        assertThat(result.getToCurrency()).isEqualTo(Currency.BRL);
+        assertThat(result.getSource()).isEqualTo("AwesomeAPI");
+        assertThat(result.getQuotedAt()).isEqualTo(LocalDateTime.of(2026, 4, 7, 11, 0));
+    }
+
     private ExchangeRate createExchangeRate(
             Currency fromCurrency,
             Currency toCurrency,

@@ -62,6 +62,20 @@ class MarketQuoteRepositoryIT {
                 .containsOnly(Commodity.SOYBEAN);
     }
 
+    @Test
+    @DisplayName("Should find latest market quote by commodity")
+    void shouldFindLatestMarketQuoteByCommodity() {
+        marketQuoteRepository.save(createMarketQuote(Commodity.SOYBEAN, "CEPEA", "132.45", Currency.USD, Unit.TON, LocalDateTime.of(2026, 4, 7, 10, 0)));
+        marketQuoteRepository.save(createMarketQuote(Commodity.SOYBEAN, "B3", "133.10", Currency.BRL, Unit.TON, LocalDateTime.of(2026, 4, 7, 11, 30)));
+        marketQuoteRepository.save(createMarketQuote(Commodity.CORN, "CEPEA", "98.50", Currency.BRL, Unit.TON, LocalDateTime.of(2026, 4, 7, 12, 0)));
+
+        MarketQuote result = marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN).orElseThrow();
+
+        assertThat(result.getCommodity()).isEqualTo(Commodity.SOYBEAN);
+        assertThat(result.getSource()).isEqualTo("B3");
+        assertThat(result.getQuotedAt()).isEqualTo(LocalDateTime.of(2026, 4, 7, 11, 30));
+    }
+
     private MarketQuote createMarketQuote(
             Commodity commodity,
             String source,
