@@ -8,6 +8,9 @@ import com.agrobasis.core_service.identity.domain.exception.UserNotFoundExceptio
 import com.agrobasis.core_service.identity.domain.exception.UserEmailAlreadyExistsException;
 import com.agrobasis.core_service.market.domain.exception.ExchangeRateNotFoundException;
 import com.agrobasis.core_service.market.domain.exception.MarketQuoteNotFoundException;
+import com.agrobasis.core_service.pricing.domain.exception.ExchangeRateUnavailableException;
+import com.agrobasis.core_service.pricing.domain.exception.MarketQuoteUnavailableException;
+import com.agrobasis.core_service.pricing.domain.exception.UnsupportedPricingContextException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -123,6 +126,45 @@ public class GlobalExceptionHandler {
                 null
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(MarketQuoteUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleMarketQuoteUnavailableException(MarketQuoteUnavailableException e, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                e.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(ExchangeRateUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleExchangeRateUnavailableException(ExchangeRateUnavailableException e, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                e.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(UnsupportedPricingContextException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedPricingContextException(UnsupportedPricingContextException e, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                e.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
