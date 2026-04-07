@@ -1,5 +1,7 @@
 package com.agrobasis.core_service.shared.api.error;
 
+import com.agrobasis.core_service.cost.domain.exception.CostProfileAlreadyExistsException;
+import com.agrobasis.core_service.cost.domain.exception.CostProfileNotFoundException;
 import com.agrobasis.core_service.farm.domain.exception.FarmNotFoundException;
 import com.agrobasis.core_service.organization.domain.exception.OrganizationAlreadyExistsException;
 import com.agrobasis.core_service.organization.domain.exception.OrganizationNotFoundException;
@@ -70,6 +72,32 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND.value(),
                 HttpStatus.NOT_FOUND.getReasonPhrase(),
                 ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(CostProfileAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleCostProfileAlreadyExistsException(CostProfileAlreadyExistsException e, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                e.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(CostProfileNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCostProfileNotFoundException(CostProfileNotFoundException e, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                e.getMessage(),
                 request.getRequestURI(),
                 null
         );
