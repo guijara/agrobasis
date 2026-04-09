@@ -1,5 +1,7 @@
 package com.agrobasis.core_service.pricing.application;
 
+import com.agrobasis.core_service.cost.domain.CostProfile;
+import com.agrobasis.core_service.cost.infrastructure.CostProfileRepository;
 import com.agrobasis.core_service.farm.domain.Commodity;
 import com.agrobasis.core_service.market.domain.Currency;
 import com.agrobasis.core_service.market.domain.ExchangeRate;
@@ -7,12 +9,13 @@ import com.agrobasis.core_service.market.domain.MarketQuote;
 import com.agrobasis.core_service.market.domain.Unit;
 import com.agrobasis.core_service.market.infrastructure.ExchangeRateRepository;
 import com.agrobasis.core_service.market.infrastructure.MarketQuoteRepository;
+import com.agrobasis.core_service.organization.domain.Organization;
 import com.agrobasis.core_service.pricing.api.dto.CurrentPricingResponse;
+import com.agrobasis.core_service.pricing.domain.exception.CostProfileUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.ExchangeRateUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.MarketQuoteUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.UnsupportedPricingContextException;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,11 +35,16 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PricingServiceTest {
 
+    private static final UUID ORGANIZATION_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
     @Mock
     private MarketQuoteRepository marketQuoteRepository;
 
     @Mock
     private ExchangeRateRepository exchangeRateRepository;
+
+    @Mock
+    private CostProfileRepository costProfileRepository;
 
     @InjectMocks
     private PricingService pricingService;
@@ -45,24 +54,33 @@ class PricingServiceTest {
     void shouldCalculateCurrentPriceSuccessfully() {
         MarketQuote marketQuote = createMarketQuote(Commodity.SOYBEAN, "132.45", Currency.USD, Unit.TON, "CEPEA");
         ExchangeRate exchangeRate = createExchangeRate(Currency.USD, Currency.BRL, "5.421300", "Banco Central");
+        CostProfile costProfile = createCostProfile(Commodity.SOYBEAN, "45.00");
 
         when(marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN))
                 .thenReturn(Optional.of(marketQuote));
         when(exchangeRateRepository.findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL))
                 .thenReturn(Optional.of(exchangeRate));
+        when(costProfileRepository.findByOrganization_IdAndCommodity(ORGANIZATION_ID, Commodity.SOYBEAN))
+                .thenReturn(Optional.of(costProfile));
 
-        CurrentPricingResponse result = pricingService.calculateCurrentPrice(Commodity.SOYBEAN);
+        CurrentPricingResponse result = pricingService.calculateCurrentPrice(ORGANIZATION_ID, Commodity.SOYBEAN);
 
         assertThat(result.commodity()).isEqualTo(Commodity.SOYBEAN);
         assertThat(result.targetCurrency()).isEqualTo(Currency.BRL);
         assertThat(result.unit()).isEqualTo(Unit.TON);
         assertThat(result.convertedPrice()).isEqualByComparingTo("718.05");
+        assertThat(result.costPerTon()).isEqualByComparingTo("45.00");
+        assertThat(result.adjustedPrice()).isEqualByComparingTo("673.05");
         assertThat(result.marketQuote().source()).isEqualTo("CEPEA");
         assertThat(result.exchangeRate().source()).isEqualTo("Banco Central");
-        assertThat(result.calculationMemory().formula()).isEqualTo("price_in_usd_per_ton × usd_brl_rate");
+        assertThat(result.calculationMemory().conversionFormula()).isEqualTo("price_in_usd_per_ton × usd_brl_rate");
+        assertThat(result.calculationMemory().adjustmentFormula()).isEqualTo("converted_price - cost_per_ton");
+        assertThat(result.calculationMemory().costPerTon()).isEqualByComparingTo("45.00");
         assertThat(result.calculationMemory().convertedPrice()).isEqualByComparingTo("718.05");
+        assertThat(result.calculationMemory().adjustedPrice()).isEqualByComparingTo("673.05");
         verify(marketQuoteRepository).findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN);
         verify(exchangeRateRepository).findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL);
+        verify(costProfileRepository).findByOrganization_IdAndCommodity(ORGANIZATION_ID, Commodity.SOYBEAN);
     }
 
     @Test
@@ -71,7 +89,7 @@ class PricingServiceTest {
         when(marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(Commodity.SOYBEAN))
+        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(ORGANIZATION_ID, Commodity.SOYBEAN))
                 .isInstanceOf(MarketQuoteUnavailableException.class);
     }
 
@@ -85,8 +103,26 @@ class PricingServiceTest {
         when(exchangeRateRepository.findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(Commodity.SOYBEAN))
+        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(ORGANIZATION_ID, Commodity.SOYBEAN))
                 .isInstanceOf(ExchangeRateUnavailableException.class);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when cost profile is unavailable")
+    void shouldThrowExceptionWhenCostProfileIsUnavailable() {
+        MarketQuote marketQuote = createMarketQuote(Commodity.SOYBEAN, "132.45", Currency.USD, Unit.TON, "CEPEA");
+        ExchangeRate exchangeRate = createExchangeRate(Currency.USD, Currency.BRL, "5.421300", "Banco Central");
+
+        when(marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN))
+                .thenReturn(Optional.of(marketQuote));
+        when(exchangeRateRepository.findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL))
+                .thenReturn(Optional.of(exchangeRate));
+        when(costProfileRepository.findByOrganization_IdAndCommodity(ORGANIZATION_ID, Commodity.SOYBEAN))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(ORGANIZATION_ID, Commodity.SOYBEAN))
+                .isInstanceOf(CostProfileUnavailableException.class)
+                .hasMessage("Nenhum perfil de custo disponível para a organização e commodity informadas.");
     }
 
     @Test
@@ -94,13 +130,16 @@ class PricingServiceTest {
     void shouldThrowExceptionWhenMarketQuoteCurrencyIsNotUsd() {
         MarketQuote marketQuote = createMarketQuote(Commodity.SOYBEAN, "132.45", Currency.BRL, Unit.TON, "CEPEA");
         ExchangeRate exchangeRate = createExchangeRate(Currency.USD, Currency.BRL, "5.421300", "Banco Central");
+        CostProfile costProfile = createCostProfile(Commodity.SOYBEAN, "45.00");
 
         when(marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN))
                 .thenReturn(Optional.of(marketQuote));
         when(exchangeRateRepository.findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL))
                 .thenReturn(Optional.of(exchangeRate));
+        when(costProfileRepository.findByOrganization_IdAndCommodity(ORGANIZATION_ID, Commodity.SOYBEAN))
+                .thenReturn(Optional.of(costProfile));
 
-        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(Commodity.SOYBEAN))
+        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(ORGANIZATION_ID, Commodity.SOYBEAN))
                 .isInstanceOf(UnsupportedPricingContextException.class)
                 .hasMessage("O cálculo atual suporta apenas cotações em USD.");
     }
@@ -110,13 +149,16 @@ class PricingServiceTest {
     void shouldThrowExceptionWhenMarketQuoteUnitIsNotTon() {
         MarketQuote marketQuote = createMarketQuote(Commodity.SOYBEAN, "132.45", Currency.USD, null, "CEPEA");
         ExchangeRate exchangeRate = createExchangeRate(Currency.USD, Currency.BRL, "5.421300", "Banco Central");
+        CostProfile costProfile = createCostProfile(Commodity.SOYBEAN, "45.00");
 
         when(marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN))
                 .thenReturn(Optional.of(marketQuote));
         when(exchangeRateRepository.findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL))
                 .thenReturn(Optional.of(exchangeRate));
+        when(costProfileRepository.findByOrganization_IdAndCommodity(ORGANIZATION_ID, Commodity.SOYBEAN))
+                .thenReturn(Optional.of(costProfile));
 
-        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(Commodity.SOYBEAN))
+        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(ORGANIZATION_ID, Commodity.SOYBEAN))
                 .isInstanceOf(UnsupportedPricingContextException.class)
                 .hasMessage("O cálculo atual suporta apenas cotações por TON.");
     }
@@ -126,13 +168,16 @@ class PricingServiceTest {
     void shouldThrowExceptionWhenExchangeRatePairIsNotUsdToBrl() {
         MarketQuote marketQuote = createMarketQuote(Commodity.SOYBEAN, "132.45", Currency.USD, Unit.TON, "CEPEA");
         ExchangeRate exchangeRate = createExchangeRate(Currency.BRL, Currency.USD, "0.184500", "Banco Central");
+        CostProfile costProfile = createCostProfile(Commodity.SOYBEAN, "45.00");
 
         when(marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN))
                 .thenReturn(Optional.of(marketQuote));
         when(exchangeRateRepository.findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL))
                 .thenReturn(Optional.of(exchangeRate));
+        when(costProfileRepository.findByOrganization_IdAndCommodity(ORGANIZATION_ID, Commodity.SOYBEAN))
+                .thenReturn(Optional.of(costProfile));
 
-        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(Commodity.SOYBEAN))
+        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(ORGANIZATION_ID, Commodity.SOYBEAN))
                 .isInstanceOf(UnsupportedPricingContextException.class)
                 .hasMessage("O cálculo atual suporta apenas câmbio USD para BRL.");
     }
@@ -156,5 +201,16 @@ class PricingServiceTest {
         exchangeRate.setSource(source);
         exchangeRate.setQuotedAt(LocalDateTime.of(2026, 4, 7, 10, 5));
         return exchangeRate;
+    }
+
+    private CostProfile createCostProfile(Commodity commodity, String costPerTon) {
+        Organization organization = new Organization();
+        organization.setId(ORGANIZATION_ID);
+
+        CostProfile costProfile = new CostProfile();
+        costProfile.setOrganization(organization);
+        costProfile.setCommodity(commodity);
+        costProfile.setCostPerTon(new BigDecimal(costPerTon));
+        return costProfile;
     }
 }

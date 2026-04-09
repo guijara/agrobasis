@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 public record CurrentPricingResponse(
         Commodity commodity,
         BigDecimal convertedPrice,
+        BigDecimal costPerTon,
+        BigDecimal adjustedPrice,
         Currency targetCurrency,
         Unit unit,
         MarketQuoteSnapshotResponse marketQuote,

@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/pricing")
 @RequiredArgsConstructor
@@ -23,11 +25,14 @@ public class PricingController {
 
     private final PricingService pricingService;
 
-    @Operation(summary = "Calcula o preço atual convertido", description = "Busca a última cotação da commodity e a última taxa USD para BRL para calcular o preço atual em BRL por tonelada.")
+    @Operation(summary = "Calcula o preço atual ajustado", description = "Busca a última cotação da commodity, a última taxa USD para BRL e o perfil de custo da organização para calcular o preço atual ajustado em BRL por tonelada.")
     @ApiResponse(responseCode = "200", description = "Preço calculado com sucesso")
     @GetMapping("/current")
-    public ResponseEntity<CurrentPricingResponse> getCurrentPricing(@RequestParam Commodity commodity) {
-        CurrentPricingResponse response = pricingService.calculateCurrentPrice(commodity);
+    public ResponseEntity<CurrentPricingResponse> getCurrentPricing(
+            @RequestParam UUID organizationId,
+            @RequestParam Commodity commodity
+    ) {
+        CurrentPricingResponse response = pricingService.calculateCurrentPrice(organizationId, commodity);
         return ResponseEntity.ok(response);
     }
 }

@@ -10,6 +10,7 @@ import com.agrobasis.core_service.identity.domain.exception.UserNotFoundExceptio
 import com.agrobasis.core_service.identity.domain.exception.UserEmailAlreadyExistsException;
 import com.agrobasis.core_service.market.domain.exception.ExchangeRateNotFoundException;
 import com.agrobasis.core_service.market.domain.exception.MarketQuoteNotFoundException;
+import com.agrobasis.core_service.pricing.domain.exception.CostProfileUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.ExchangeRateUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.MarketQuoteUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.UnsupportedPricingContextException;
@@ -171,6 +172,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ExchangeRateUnavailableException.class)
     public ResponseEntity<ErrorResponse> handleExchangeRateUnavailableException(ExchangeRateUnavailableException e, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                e.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(CostProfileUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleCostProfileUnavailableException(CostProfileUnavailableException e, HttpServletRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.NOT_FOUND.value(),
