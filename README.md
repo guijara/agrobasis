@@ -107,7 +107,7 @@ O projeto prioriza testes que validem comportamento real do sistema, incluindo:
 
 ## 📚 Documentação
 
-A documentação do projeto está sendo construída junto com a evolução do sistema, registrando:
+A documentação do projeto está sendo construída junto com a evolução do sistema, e pode ser encontrada em '/docs', e registra:
 
 - decisões de arquitetura;
 - modelagem de domínio;
