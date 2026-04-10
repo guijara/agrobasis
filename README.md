@@ -1,8 +1,8 @@
-# 🌾 AgroBasis (Ecossistema Néctar)
+# 🌾 AgroBasis (Em desenvolvimento)
 
 > Transformando o agronegócio através de dados estruturados, performance e inteligência agronômica.
 
-O **AgroBasis** é um ecossistema SaaS (Software as a Service) focado na gestão agrícola inteligente. Projetado com base nos princípios de *Domain-Driven Design* (DDD) e arquitetura de microsserviços, o sistema oferece desde o controle estrutural e financeiro de fazendas até a fundação para integrações avançadas de predição climática e análise de solo.
+O **AgroBasis** é um sistema focado na gestão agrícola inteligente. Projetado com base nos princípios de *Domain-Driven Design* (DDD) e arquitetura monolítica modular, o sistema oferece desde o controle estrutural e financeiro de fazendas até a fundação para integrações avançadas de predição climática e análise de solo.
 
 O objetivo do projeto é fornecer uma plataforma robusta, escalável e de altíssima performance, resolvendo gargalos clássicos de sistemas agrícolas e entregando *insights* valiosos para a tomada de decisão no campo.
 
