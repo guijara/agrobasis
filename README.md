@@ -14,6 +14,20 @@ A proposta do sistema é crescer com uma base sólida, segura e escalável, come
 
 ---
 
+## 💡 Como o AgroBasis funciona
+
+De forma simples, o AgroBasis ajuda a empresa rural a conectar três tipos de informação que normalmente ficam espalhadas:
+
+- **o que ela produz**;
+- **quanto isso custa para ela**;
+- **quanto o mercado está pagando naquele momento**.
+
+A partir disso, o sistema organiza a estrutura da operação — empresa, usuários, fazendas, talhões e commodities —, recebe referências externas como cotação e câmbio, registra custos internos e transforma tudo isso em um cálculo econômico mais claro e utilizável.
+
+Na prática, a ideia é permitir que a organização enxergue melhor o valor atual de uma commodity dentro do seu próprio contexto, com base em dados estruturados e regras consistentes. No futuro, essa base também servirá para análises mais avançadas, simulações e apoio à decisão.
+
+---
+
 ## 🏗️ Arquitetura
 
 O AgroBasis está sendo desenvolvido como um **monólito modular**, priorizando clareza de domínio, simplicidade de evolução e baixo acoplamento entre responsabilidades.
@@ -31,40 +45,6 @@ O AgroBasis está sendo desenvolvido como um **monólito modular**, priorizando 
 
 - **Intelligence Service** *(em roadmap)*
   - futuro módulo analítico para simulações e cenários
-
----
-
-## 🧩 Módulos atuais
-
-### `organization`
-Define a organização como núcleo do sistema e base do modelo **multi-tenant**.
-
-### `identity`
-Cuida de usuários, papéis de acesso e segurança.  
-Já possui autenticação com JWT, hash de senha com BCrypt e fluxo de solicitação/aprovação de vínculo com organização.
-
-### `farm`
-Modela a estrutura produtiva básica da empresa:
-- fazenda
-- talhão
-- commodity
-
-### `market`
-Armazena referências externas de mercado:
-- cotações de commodities
-- taxas de câmbio
-
-### `cost`
-Armazena custos internos de referência por:
-- organização
-- commodity
-
-### `pricing`
-Combina mercado e custo para retornar:
-- preço convertido
-- custo por tonelada
-- preço ajustado
-- memória de cálculo
 
 ---
 
@@ -86,21 +66,6 @@ A segurança do backend já começou a ser consolidada com:
 3. o usuário solicita vínculo com uma organização;
 4. a organização aprova ou rejeita a solicitação;
 5. após aprovação, o usuário passa a operar no tenant correspondente.
-
----
-
-## 🚀 O que o sistema já faz
-
-A base atual do backend já permite executar um fluxo real como:
-
-1. criar organização;
-2. criar usuário;
-3. criar fazenda;
-4. criar talhão com commodity;
-5. registrar cotação;
-6. registrar câmbio;
-7. registrar custo;
-8. calcular o pricing ajustado.
 
 ---
 
