@@ -5,6 +5,8 @@ import com.agrobasis.core_service.identity.api.dto.UserResponse;
 import com.agrobasis.core_service.identity.api.dto.UserUpdateRequest;
 import com.agrobasis.core_service.shared.api.doc.ApiStandardErrors;
 import com.agrobasis.core_service.identity.application.UserService;
+import com.agrobasis.core_service.identity.infrastructure.security.AuthenticatedUser;
+import com.agrobasis.core_service.shared.security.TenantAccessValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -29,6 +32,7 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final TenantAccessValidator tenantAccessValidator;
 
     @Operation(summary = "Registra um novo usuário")
     @ApiResponse(responseCode = "201", description = "Usuário criado com sucesso")
@@ -51,8 +55,10 @@ public class UserController {
     @GetMapping
     public ResponseEntity<Page<UserResponse>> listUser(
             @RequestParam UUID organizationId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @ParameterObject @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
+        tenantAccessValidator.assertOrganizationAccess(authenticatedUser, organizationId);
         Page<UserResponse> response = userService.findAllUsersByOrganization(organizationId, pageable);
         return ResponseEntity.ok(response);
     }

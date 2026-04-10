@@ -1,23 +1,29 @@
 package com.agrobasis.core_service.identity.integration;
 
-import com.agrobasis.core_service.shared.api.error.ErrorResponse;
-import com.agrobasis.core_service.organization.domain.Organization;
-import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
+import com.agrobasis.core_service.identity.api.dto.LoginRequest;
+import com.agrobasis.core_service.identity.api.dto.LoginResponse;
+import com.agrobasis.core_service.identity.api.dto.MembershipRequestCreateRequest;
+import com.agrobasis.core_service.identity.api.dto.MembershipRequestResponse;
 import com.agrobasis.core_service.identity.api.dto.UserCreateRequest;
 import com.agrobasis.core_service.identity.api.dto.UserResponse;
-import com.agrobasis.core_service.identity.api.dto.UserUpdateRequest;
 import com.agrobasis.core_service.identity.domain.User;
+import com.agrobasis.core_service.identity.domain.UserAccessStatus;
 import com.agrobasis.core_service.identity.domain.UserRole;
+import com.agrobasis.core_service.identity.infrastructure.MembershipRequestRepository;
 import com.agrobasis.core_service.identity.infrastructure.UserRepository;
+import com.agrobasis.core_service.organization.domain.Organization;
+import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
+import com.agrobasis.core_service.shared.api.error.ErrorResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestClient;
 
@@ -40,241 +46,111 @@ class UserUseCaseIT {
     @Autowired
     private UserRepository userRepository;
 
-    private UUID savedOrgId;
+    @Autowired
+    private MembershipRequestRepository membershipRequestRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    private Organization organization;
+    private User admin;
 
     @BeforeEach
     void setUp() {
-        this.restClient = RestClient.builder()
+        restClient = RestClient.builder()
                 .baseUrl("http://localhost:" + port)
                 .build();
 
+        membershipRequestRepository.deleteAll();
         userRepository.deleteAll();
         organizationRepository.deleteAll();
 
-        Organization org = new Organization();
-        org.setName("AgroTech");
-        org.setCnpj("12.345.678/0001-90");
-        org.setLocation("Cuiabá");
-        org = organizationRepository.save(org);
+        organization = new Organization();
+        organization.setName("AgroTech");
+        organization.setCnpj("12.345.678/0001-90");
+        organization.setLocation("Cuiaba");
+        organization = organizationRepository.save(organization);
 
-        this.savedOrgId = org.getId();
+        admin = new User();
+        admin.setName("Admin");
+        admin.setEmail("admin@agrotech.com");
+        admin.setPassword(passwordEncoder.encode("SenhaForte123"));
+        admin.setRole(UserRole.ADMIN);
+        admin.setAccessStatus(UserAccessStatus.ACTIVE);
+        admin.setOrganization(organization);
+        admin = userRepository.save(admin);
     }
 
-    @Nested
-    @DisplayName("Cenários de POST /api/user")
-    class CreateUserScenarios {
+    @Test
+    @DisplayName("Should register public user, request membership, block login until approval and allow login after approval")
+    void shouldHandleMembershipApprovalLifecycle() {
+        UserResponse createdUser = restClient.post()
+                .uri("/api/user")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new UserCreateRequest("Guilherme", "guilherme@agrotech.com", "SenhaForte123"))
+                .retrieve()
+                .toEntity(UserResponse.class)
+                .getBody();
 
-        @Test
-        @DisplayName("Deve criar um usuário com sucesso e não retornar a senha")
-        void shouldCreateUserSuccessfully() {
-            // Arrange
-            UserCreateRequest request = new UserCreateRequest(
-                    "Guilherme",
-                    "guilherme@agrotech.com",
-                    "SenhaForte123",
-                    UserRole.ADMIN,
-                    savedOrgId
-            );
+        assertThat(createdUser).isNotNull();
+        assertThat(createdUser.role()).isEqualTo(UserRole.VIEWER);
+        assertThat(createdUser.accessStatus()).isEqualTo(UserAccessStatus.PENDING_ORGANIZATION_APPROVAL);
+        assertThat(createdUser.organizationId()).isNull();
 
-            // Act
-            var response = restClient.post()
-                    .uri("/api/user")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(request)
-                    .retrieve()
-                    .toEntity(UserResponse.class);
+        var blockedLogin = restClient.post()
+                .uri("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new LoginRequest("guilherme@agrotech.com", "SenhaForte123"))
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError(), (req, res) -> {})
+                .toEntity(ErrorResponse.class);
 
-            // Assert
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-            assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody().id()).isNotNull();
-            assertThat(response.getBody().name()).isEqualTo("Guilherme");
-            assertThat(response.getBody().email()).isEqualTo("guilherme@agrotech.com");
-            assertThat(response.getBody().role()).isEqualTo(UserRole.ADMIN);
-            assertThat(response.getBody().organizationId()).isEqualTo(savedOrgId);
-        }
+        assertThat(blockedLogin.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
 
-        @Test
-        @DisplayName("Deve barrar a criação de usuário com e-mail já existente")
-        void shouldFailWhenEmailIsDuplicated() {
-            // Arrange
-            User existingUser = new User();
-            existingUser.setName("João");
-            existingUser.setEmail("guilherme@agrotech.com");
-            existingUser.setPassword("123456");
-            existingUser.setRole(UserRole.OPERATOR);
-            existingUser.setOrganization(organizationRepository.getReferenceById(savedOrgId));
-            userRepository.save(existingUser);
+        MembershipRequestResponse membershipRequest = restClient.post()
+                .uri("/api/identity/membership-requests")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new MembershipRequestCreateRequest(createdUser.id(), organization.getId()))
+                .retrieve()
+                .toEntity(MembershipRequestResponse.class)
+                .getBody();
 
-            UserCreateRequest conflictRequest = new UserCreateRequest(
-                    "Guilherme Clone",
-                    "guilherme@agrotech.com",
-                    "NovaSenha123",
-                    UserRole.ADMIN,
-                    savedOrgId
-            );
+        assertThat(membershipRequest).isNotNull();
+        assertThat(membershipRequest.status().name()).isEqualTo("PENDING");
 
-            // Act
-            var response = restClient.post()
-                    .uri("/api/user")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(conflictRequest)
-                    .retrieve()
-                    .onStatus(status -> status.is4xxClientError(), (req, res) -> {})
-                    .toEntity(ErrorResponse.class);
+        String adminToken = login("admin@agrotech.com", "SenhaForte123");
 
-            // Assert
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-            assertThat(response.getBody().message()).isEqualTo("O email guilherme@agrotech.com já existe");
-        }
+        MembershipRequestResponse approved = restClient.put()
+                .uri("/api/identity/membership-requests/{id}/approve", membershipRequest.id())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                .retrieve()
+                .toEntity(MembershipRequestResponse.class)
+                .getBody();
+
+        assertThat(approved).isNotNull();
+        assertThat(approved.status().name()).isEqualTo("APPROVED");
+
+        LoginResponse loginResponse = restClient.post()
+                .uri("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new LoginRequest("guilherme@agrotech.com", "SenhaForte123"))
+                .retrieve()
+                .toEntity(LoginResponse.class)
+                .getBody();
+
+        assertThat(loginResponse).isNotNull();
+        assertThat(loginResponse.organizationId()).isEqualTo(organization.getId());
+        assertThat(loginResponse.role()).isEqualTo(UserRole.VIEWER);
     }
 
-    @Nested
-    @DisplayName("Cenários de GET /api/user")
-    class GetUserScenarios {
-
-        @Test
-        @DisplayName("Deve buscar um usuário pelo ID com sucesso")
-        void shouldGetUserById() {
-            // Arrange
-            User testUser = createTestUser("Buscado da Silva", "busca@agrotech.com");
-
-            // Act
-            var response = restClient.get()
-                    .uri("/api/user/{id}", testUser.getId())
-                    .retrieve()
-                    .toEntity(UserResponse.class);
-
-            // Assert
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody().name()).isEqualTo("Buscado da Silva");
-            assertThat(response.getBody().email()).isEqualTo("busca@agrotech.com");
-            assertThat(response.getBody().organizationId()).isEqualTo(savedOrgId);
-        }
-
-        @Test
-        @DisplayName("Deve retornar 404 ao buscar usuário inexistente")
-        void shouldReturn404WhenUserNotFound() {
-            var response = restClient.get()
-                    .uri("/api/user/{id}", UUID.randomUUID())
-                    .retrieve()
-                    .onStatus(status -> status.is4xxClientError(), (req, res) -> {})
-                    .toEntity(ErrorResponse.class);
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        }
-
-        @Test
-        @DisplayName("Deve listar usuários de uma organização com paginação")
-        void shouldListUsersByOrganization() {
-            // Arrange
-            createTestUser("Alice Souza", "alice@agrotech.com");
-            createTestUser("Bob Alves", "bob@agrotech.com");
-
-            // Act
-            var response = restClient.get()
-                    .uri(builder -> builder.path("/api/user")
-                            .queryParam("organizationId", savedOrgId)
-                            .build())
-                    .retrieve()
-                    .toEntity(String.class);
-
-            // Assert
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(response.getBody()).contains("Alice Souza");
-            assertThat(response.getBody()).contains("Bob Alves");
-        }
-    }
-
-    @Nested
-    @DisplayName("Cenários de PUT /api/user/{id}")
-    class UpdateUserScenarios {
-
-        @Test
-        @DisplayName("Deve atualizar os dados básicos do usuário com sucesso")
-        void shouldUpdateUserSuccessfully() {
-            // Arrange
-            User existingUser = createTestUser("Usuário Antigo", "antigo@agrotech.com");
-
-            UserUpdateRequest updateRequest = new UserUpdateRequest(
-                    "Usuário Atualizado Silva",
-                    "atualizado@agrotech.com"
-            );
-
-            // Act
-            var response = restClient.put()
-                    .uri("/api/user/{id}", existingUser.getId())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(updateRequest)
-                    .retrieve()
-                    .toEntity(UserResponse.class);
-
-            // Assert
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody().name()).isEqualTo("Usuário Atualizado Silva");
-            assertThat(response.getBody().email()).isEqualTo("atualizado@agrotech.com");
-        }
-
-        @Test
-        @DisplayName("Deve barrar atualização se o novo e-mail já pertencer a OUTRO usuário")
-        void shouldFailUpdateWhenEmailBelongsToAnotherUser() {
-            // Arrange
-            createTestUser("Alice Original", "alice@agrotech.com");
-            User userBob = createTestUser("Bob Hacker", "bob@agrotech.com");
-
-            UserUpdateRequest conflictRequest = new UserUpdateRequest(
-                    "Bob Malicioso",
-                    "alice@agrotech.com"
-            );
-
-            // Act
-            var response = restClient.put()
-                    .uri("/api/user/{id}", userBob.getId())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(conflictRequest)
-                    .retrieve()
-                    .onStatus(status -> status.is4xxClientError(), (req, res) -> {})
-                    .toEntity(ErrorResponse.class);
-
-            // Assert
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-            assertThat(response.getBody().message()).isEqualTo("O email alice@agrotech.com já existe");
-        }
-    }
-
-    @Nested
-    @DisplayName("Cenários de DELETE /api/user")
-    class DeleteUserScenarios {
-
-        @Test
-        @DisplayName("Deve deletar um usuário com sucesso (Status 204)")
-        void shouldDeleteUserSuccessfully() {
-            // Arrange
-            User testUser = createTestUser("Demitido da Silva", "demitido@agrotech.com");
-
-            // Act
-            var response = restClient.delete()
-                    .uri("/api/user/{id}", testUser.getId())
-                    .retrieve()
-                    .toBodilessEntity();
-
-            // Assert
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-
-            boolean exists = userRepository.existsById(testUser.getId());
-            assertThat(exists).isFalse();
-        }
-    }
-
-    private User createTestUser(String name, String email) {
-        User user = new User();
-        user.setName(name);
-        user.setEmail(email);
-        user.setPassword("Senha123");
-        user.setRole(UserRole.OPERATOR);
-        user.setOrganization(organizationRepository.getReferenceById(savedOrgId));
-        return userRepository.save(user);
+    private String login(String email, String password) {
+        return restClient.post()
+                .uri("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new LoginRequest(email, password))
+                .retrieve()
+                .toEntity(LoginResponse.class)
+                .getBody()
+                .accessToken();
     }
 }

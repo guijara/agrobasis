@@ -29,14 +29,19 @@ public class User {
     private String password;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
     private UserRole role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "access_status", nullable = false, length = 50)
+    private UserAccessStatus accessStatus;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organization_id", nullable = false)
+    @JoinColumn(name = "organization_id")
     private Organization organization;
 
 }

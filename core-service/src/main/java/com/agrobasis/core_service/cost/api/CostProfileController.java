@@ -5,7 +5,9 @@ import com.agrobasis.core_service.cost.api.dto.CostProfileResponse;
 import com.agrobasis.core_service.cost.api.dto.CostProfileUpdateRequest;
 import com.agrobasis.core_service.cost.application.CostProfileService;
 import com.agrobasis.core_service.farm.domain.Commodity;
+import com.agrobasis.core_service.identity.infrastructure.security.AuthenticatedUser;
 import com.agrobasis.core_service.shared.api.doc.ApiStandardErrors;
+import com.agrobasis.core_service.shared.security.TenantAccessValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,11 +36,16 @@ import java.util.UUID;
 public class CostProfileController {
 
     private final CostProfileService costProfileService;
+    private final TenantAccessValidator tenantAccessValidator;
 
     @Operation(summary = "Cria um perfil de custo", description = "Registra o custo base por tonelada de uma commodity para uma organização.")
     @ApiResponse(responseCode = "201", description = "Perfil de custo criado com sucesso")
     @PostMapping
-    public ResponseEntity<CostProfileResponse> postCostProfile(@Valid @RequestBody CostProfileCreateRequest request) {
+    public ResponseEntity<CostProfileResponse> postCostProfile(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @Valid @RequestBody CostProfileCreateRequest request
+    ) {
+        tenantAccessValidator.assertOrganizationAccess(authenticatedUser, request.organizationId());
         CostProfileResponse response = costProfileService.createCostProfile(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -55,7 +63,9 @@ public class CostProfileController {
     @GetMapping("/search")
     public ResponseEntity<CostProfileResponse> searchCostProfile(
             @RequestParam UUID organizationId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @RequestParam Commodity commodity) {
+        tenantAccessValidator.assertOrganizationAccess(authenticatedUser, organizationId);
         CostProfileResponse response = costProfileService.getCostProfileByOrganizationAndCommodity(organizationId, commodity);
         return ResponseEntity.ok(response);
     }
@@ -63,7 +73,11 @@ public class CostProfileController {
     @Operation(summary = "Lista perfis de custo por organização", description = "Retorna todos os perfis de custo cadastrados para a organização informada.")
     @ApiResponse(responseCode = "200", description = "Perfis de custo listados com sucesso")
     @GetMapping
-    public ResponseEntity<List<CostProfileResponse>> listCostProfiles(@RequestParam UUID organizationId) {
+    public ResponseEntity<List<CostProfileResponse>> listCostProfiles(
+            @RequestParam UUID organizationId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        tenantAccessValidator.assertOrganizationAccess(authenticatedUser, organizationId);
         List<CostProfileResponse> response = costProfileService.listCostProfilesByOrganization(organizationId);
         return ResponseEntity.ok(response);
     }

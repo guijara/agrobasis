@@ -1,18 +1,18 @@
 package com.agrobasis.core_service.identity.application;
 
-import com.agrobasis.core_service.organization.domain.Organization;
-import com.agrobasis.core_service.organization.domain.exception.OrganizationNotFoundException;
-import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
 import com.agrobasis.core_service.identity.api.dto.UserCreateRequest;
 import com.agrobasis.core_service.identity.api.dto.UserResponse;
 import com.agrobasis.core_service.identity.api.dto.UserUpdateRequest;
 import com.agrobasis.core_service.identity.domain.User;
+import com.agrobasis.core_service.identity.domain.UserAccessStatus;
+import com.agrobasis.core_service.identity.domain.UserRole;
 import com.agrobasis.core_service.identity.domain.exception.UserEmailAlreadyExistsException;
 import com.agrobasis.core_service.identity.domain.exception.UserNotFoundException;
 import com.agrobasis.core_service.identity.infrastructure.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,92 +23,69 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final OrganizationRepository organizationRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserResponse createUser(UserCreateRequest request){
-        boolean exists = userRepository.existsByEmail(request.email());
-
-        if (exists){
-            throw new UserEmailAlreadyExistsException("O email "+request.email()+" já existe");
+    @Transactional
+    public UserResponse createUser(UserCreateRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new UserEmailAlreadyExistsException("O email " + request.email() + " já existe");
         }
-
-        Organization organization = organizationRepository.findById(request.organizationId()).orElseThrow(
-                () -> new OrganizationNotFoundException("Organização não encontrada."));
 
         User user = new User();
         user.setName(request.name());
         user.setEmail(request.email());
-        user.setRole(request.role());
-        user.setPassword(request.password());
-        user.setOrganization(organization);
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setRole(UserRole.VIEWER);
+        user.setAccessStatus(UserAccessStatus.PENDING_ORGANIZATION_APPROVAL);
+        user.setOrganization(null);
 
-        User savedUser = userRepository.save(user);
-
-        return new UserResponse(
-            savedUser.getId(),
-            savedUser.getName(),
-            savedUser.getEmail(),
-            savedUser.getRole(),
-            savedUser.getOrganization().getId()
-        );
+        return toResponse(userRepository.save(user));
     }
 
-    public UserResponse findUserById(UUID id){
-        User user = userRepository.findById(id).orElseThrow(
-                () -> new UserNotFoundException("Usuário não encontrado."));
+    @Transactional(readOnly = true)
+    public UserResponse findUserById(UUID id) {
+        User user = userRepository.findWithOrganizationById(id)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado."));
+        return toResponse(user);
+    }
 
+    @Transactional(readOnly = true)
+    public Page<UserResponse> findAllUsersByOrganization(UUID organizationId, Pageable pageable) {
+        Page<User> users = userRepository.findAllByOrganization_Id(organizationId, pageable);
+        return users.map(this::toResponse);
+    }
+
+    @Transactional
+    public UserResponse updateUser(UUID id, UserUpdateRequest request) {
+        User user = userRepository.findWithOrganizationById(id)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado."));
+
+        boolean emailExists = userRepository.existsByEmailAndIdNot(request.email(), id);
+        if (emailExists) {
+            throw new UserEmailAlreadyExistsException("O email " + request.email() + " já existe");
+        }
+
+        user.setName(request.name());
+        user.setEmail(request.email());
+
+        return toResponse(userRepository.save(user));
+    }
+
+    @Transactional
+    public void deleteUser(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado."));
+        userRepository.delete(user);
+    }
+
+    private UserResponse toResponse(User user) {
         return new UserResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
                 user.getRole(),
-                user.getOrganization().getId()
+                user.getAccessStatus(),
+                user.getOrganization() != null ? user.getOrganization().getId() : null
         );
-    }
-
-    @Transactional(readOnly = true)
-    public Page<UserResponse> findAllUsersByOrganization(UUID organizationId, Pageable pageable){
-        Page<User> users = userRepository.findAllByOrganization_Id(organizationId,pageable);
-
-        return users.map(user -> new UserResponse(
-            user.getId(),
-            user.getName(),
-            user.getEmail(),
-            user.getRole(),
-            user.getOrganization().getId()
-        ));
-    }
-
-    @Transactional
-    public UserResponse updateUser(UUID id, UserUpdateRequest request){
-        User user = userRepository.findById(id).orElseThrow(
-                () -> new UserNotFoundException("Usuário não encontrado."));
-
-        boolean emailExists = userRepository.existsByEmailAndIdNot(request.email(),id);
-
-        if (emailExists){
-            throw new UserEmailAlreadyExistsException("O email "+request.email()+" já existe");
-        }
-
-        user.setName(request.name());
-        user.setEmail(request.email());
-
-        userRepository.save(user);
-
-        return new UserResponse(
-            user.getId(),
-            user.getName(),
-            user.getEmail(),
-            user.getRole(),
-            user.getOrganization().getId()
-        );
-    }
-
-    @Transactional
-    public void deleteUser(UUID id){
-        User user = userRepository.findById(id).orElseThrow(
-                () -> new UserNotFoundException("Usuário não encontrado."));
-
-        userRepository.delete(user);
     }
 }

@@ -20,3 +20,7 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+
+jwt:
+  secret: ${JWT_SECRET:Zm9yLWRldmVsb3BtZW50LW9ubHktand0LXNlY3JldC1tdXN0LWJlLWxvbmdlbm91Z2g=}
+  expiration: ${JWT_EXPIRATION:43200000}
