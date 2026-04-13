@@ -6,12 +6,16 @@ import com.agrobasis.core_service.market.domain.Unit;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record CurrentPricingResponse(
         Commodity commodity,
+        UUID farmId,
         BigDecimal convertedPrice,
         BigDecimal costPerTon,
         BigDecimal adjustedPrice,
+        BigDecimal freightPerTon,
+        BigDecimal netPrice,
         Currency targetCurrency,
         Unit unit,
         MarketQuoteSnapshotResponse marketQuote,

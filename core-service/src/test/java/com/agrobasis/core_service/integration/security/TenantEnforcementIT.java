@@ -1,6 +1,7 @@
 package com.agrobasis.core_service.integration.security;
 
 import com.agrobasis.core_service.cost.infrastructure.CostProfileRepository;
+import com.agrobasis.core_service.cost.infrastructure.FreightProfileRepository;
 import com.agrobasis.core_service.farm.infrastructure.FarmRepository;
 import com.agrobasis.core_service.farm.infrastructure.PlotRepository;
 import com.agrobasis.core_service.identity.application.JwtService;
@@ -44,6 +45,9 @@ class TenantEnforcementIT {
     private CostProfileRepository costProfileRepository;
 
     @Autowired
+    private FreightProfileRepository freightProfileRepository;
+
+    @Autowired
     private ExchangeRateRepository exchangeRateRepository;
 
     @Autowired
@@ -75,6 +79,7 @@ class TenantEnforcementIT {
                 .build();
 
         costProfileRepository.deleteAll();
+        freightProfileRepository.deleteAll();
         exchangeRateRepository.deleteAll();
         marketQuoteRepository.deleteAll();
         plotRepository.deleteAll();

@@ -1,7 +1,9 @@
 package com.agrobasis.core_service.pricing.application;
 
 import com.agrobasis.core_service.cost.domain.CostProfile;
+import com.agrobasis.core_service.cost.domain.FreightProfile;
 import com.agrobasis.core_service.cost.infrastructure.CostProfileRepository;
+import com.agrobasis.core_service.cost.infrastructure.FreightProfileRepository;
 import com.agrobasis.core_service.farm.domain.Commodity;
 import com.agrobasis.core_service.market.domain.Currency;
 import com.agrobasis.core_service.market.domain.ExchangeRate;
@@ -15,6 +17,7 @@ import com.agrobasis.core_service.pricing.api.dto.ExchangeRateSnapshotResponse;
 import com.agrobasis.core_service.pricing.api.dto.MarketQuoteSnapshotResponse;
 import com.agrobasis.core_service.pricing.domain.exception.CostProfileUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.ExchangeRateUnavailableException;
+import com.agrobasis.core_service.pricing.domain.exception.FreightProfileUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.MarketQuoteUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.UnsupportedPricingContextException;
 import lombok.RequiredArgsConstructor;
@@ -32,8 +35,9 @@ public class PricingService {
     private final MarketQuoteRepository marketQuoteRepository;
     private final ExchangeRateRepository exchangeRateRepository;
     private final CostProfileRepository costProfileRepository;
+    private final FreightProfileRepository freightProfileRepository;
 
-    public CurrentPricingResponse calculateCurrentPrice(UUID organizationId, Commodity commodity) {
+    public CurrentPricingResponse calculateCurrentPrice(UUID organizationId, UUID farmId, Commodity commodity) {
         MarketQuote marketQuote = marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(commodity)
                 .orElseThrow(() -> new MarketQuoteUnavailableException("Nenhuma cotação disponível para a commodity informada."));
 
@@ -43,6 +47,9 @@ public class PricingService {
 
         CostProfile costProfile = costProfileRepository.findByOrganization_IdAndCommodity(organizationId, commodity)
                 .orElseThrow(() -> new CostProfileUnavailableException("Nenhum perfil de custo disponível para a organização e commodity informadas."));
+
+        FreightProfile freightProfile = freightProfileRepository.findByOrganization_IdAndFarm_IdAndCommodity(organizationId, farmId, commodity)
+                .orElseThrow(() -> new FreightProfileUnavailableException("Nenhum frete disponível para a organização, fazenda e commodity informadas."));
 
         validatePricingContext(marketQuote, exchangeRate);
 
@@ -54,11 +61,18 @@ public class PricingService {
                 .subtract(costProfile.getCostPerTon())
                 .setScale(2, RoundingMode.HALF_UP);
 
+        BigDecimal netPrice = adjustedPrice
+                .subtract(freightProfile.getFreightPerTon())
+                .setScale(2, RoundingMode.HALF_UP);
+
         return new CurrentPricingResponse(
                 marketQuote.getCommodity(),
+                farmId,
                 convertedPrice,
                 costProfile.getCostPerTon(),
                 adjustedPrice,
+                freightProfile.getFreightPerTon(),
+                netPrice,
                 Currency.BRL,
                 marketQuote.getUnit(),
                 new MarketQuoteSnapshotResponse(
@@ -79,11 +93,14 @@ public class PricingService {
                 new CalculationMemoryResponse(
                         "price_in_usd_per_ton × usd_brl_rate",
                         "converted_price - cost_per_ton",
+                        "adjusted_price - freight_per_ton",
                         marketQuote.getPrice(),
                         exchangeRate.getRate(),
                         costProfile.getCostPerTon(),
+                        freightProfile.getFreightPerTon(),
                         convertedPrice,
-                        adjustedPrice
+                        adjustedPrice,
+                        netPrice
                 ),
                 LocalDateTime.now()
         );

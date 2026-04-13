@@ -36,6 +36,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/identity/membership-requests/pending").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/cost/profiles").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/cost/profiles/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/cost/freight-profiles").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/cost/freight-profiles/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/market/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/market/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

@@ -29,16 +29,17 @@ public class PricingController {
     private final PricingService pricingService;
     private final TenantAccessValidator tenantAccessValidator;
 
-    @Operation(summary = "Calcula o preço atual ajustado", description = "Busca a última cotação da commodity, a última taxa USD para BRL e o perfil de custo da organização para calcular o preço atual ajustado em BRL por tonelada.")
+    @Operation(summary = "Calcula o preço atual líquido", description = "Busca a última cotação da commodity, a última taxa USD para BRL, o perfil de custo e o perfil de frete para calcular o preço líquido preliminar em BRL por tonelada.")
     @ApiResponse(responseCode = "200", description = "Preço calculado com sucesso")
     @GetMapping("/current")
     public ResponseEntity<CurrentPricingResponse> getCurrentPricing(
             @RequestParam UUID organizationId,
+            @RequestParam UUID farmId,
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @RequestParam Commodity commodity
     ) {
         tenantAccessValidator.assertOrganizationAccess(authenticatedUser, organizationId);
-        CurrentPricingResponse response = pricingService.calculateCurrentPrice(organizationId, commodity);
+        CurrentPricingResponse response = pricingService.calculateCurrentPrice(organizationId, farmId, commodity);
         return ResponseEntity.ok(response);
     }
 }

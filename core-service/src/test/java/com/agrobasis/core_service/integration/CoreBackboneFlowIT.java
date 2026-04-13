@@ -2,7 +2,10 @@ package com.agrobasis.core_service.integration;
 
 import com.agrobasis.core_service.cost.api.dto.CostProfileCreateRequest;
 import com.agrobasis.core_service.cost.api.dto.CostProfileResponse;
+import com.agrobasis.core_service.cost.api.dto.FreightProfileCreateRequest;
+import com.agrobasis.core_service.cost.api.dto.FreightProfileResponse;
 import com.agrobasis.core_service.cost.infrastructure.CostProfileRepository;
+import com.agrobasis.core_service.cost.infrastructure.FreightProfileRepository;
 import com.agrobasis.core_service.farm.api.dto.FarmCreateRequest;
 import com.agrobasis.core_service.farm.api.dto.FarmResponse;
 import com.agrobasis.core_service.farm.api.dto.PlotCreateRequest;
@@ -72,6 +75,9 @@ class CoreBackboneFlowIT {
     private CostProfileRepository costProfileRepository;
 
     @Autowired
+    private FreightProfileRepository freightProfileRepository;
+
+    @Autowired
     private ExchangeRateRepository exchangeRateRepository;
 
     @Autowired
@@ -110,6 +116,7 @@ class CoreBackboneFlowIT {
                 .build();
 
         costProfileRepository.deleteAll();
+        freightProfileRepository.deleteAll();
         exchangeRateRepository.deleteAll();
         marketQuoteRepository.deleteAll();
         plotRepository.deleteAll();
@@ -137,8 +144,8 @@ class CoreBackboneFlowIT {
     }
 
     @Test
-    @DisplayName("Should complete secured backbone flow and return adjusted pricing")
-    void shouldCompleteSecuredBackboneFlowAndReturnAdjustedPricing() {
+    @DisplayName("Should complete secured backbone flow and return net pricing")
+    void shouldCompleteSecuredBackboneFlowAndReturnNetPricing() {
         UserResponse viewer = registerViewer();
         MembershipRequestResponse membershipRequest = createMembershipRequest(viewer.id());
         String adminToken = login("admin@agrotech.com", "SenhaForte123");
@@ -150,10 +157,12 @@ class CoreBackboneFlowIT {
         MarketQuoteResponse marketQuote = createMarketQuote(adminToken);
         ExchangeRateResponse exchangeRate = createExchangeRate(adminToken);
         CostProfileResponse costProfile = createCostProfile(adminToken);
+        FreightProfileResponse freightProfile = createFreightProfile(farm.id(), adminToken);
 
         CurrentPricingResponse pricing = restClient.get()
                 .uri(builder -> builder.path("/api/pricing/current")
                         .queryParam("organizationId", organization.getId())
+                        .queryParam("farmId", farm.id())
                         .queryParam("commodity", Commodity.SOYBEAN)
                         .build())
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + viewerToken)
@@ -166,10 +175,13 @@ class CoreBackboneFlowIT {
         assertThat(marketQuote.price()).isEqualByComparingTo("132.45");
         assertThat(exchangeRate.rate()).isEqualByComparingTo("5.421300");
         assertThat(costProfile.costPerTon()).isEqualByComparingTo("45.00");
+        assertThat(freightProfile.freightPerTon()).isEqualByComparingTo("20.00");
         assertThat(pricing).isNotNull();
         assertThat(pricing.commodity()).isEqualTo(Commodity.SOYBEAN);
+        assertThat(pricing.farmId()).isEqualTo(farm.id());
         assertThat(pricing.convertedPrice()).isEqualByComparingTo("718.05");
         assertThat(pricing.adjustedPrice()).isEqualByComparingTo("673.05");
+        assertThat(pricing.netPrice()).isEqualByComparingTo("653.05");
     }
 
     @Test
@@ -178,13 +190,16 @@ class CoreBackboneFlowIT {
         String adminToken = login("admin@agrotech.com", "SenhaForte123");
         stubExternalMarketData();
 
+        FarmResponse farm = createFarm(adminToken);
         CostProfileResponse costProfile = createCostProfile(adminToken);
+        FreightProfileResponse freightProfile = createFreightProfile(farm.id(), adminToken);
         MarketQuoteResponse marketQuote = syncMarketQuote(adminToken);
         ExchangeRateResponse exchangeRate = syncExchangeRate(adminToken);
 
         CurrentPricingResponse pricing = restClient.get()
                 .uri(builder -> builder.path("/api/pricing/current")
                         .queryParam("organizationId", organization.getId())
+                        .queryParam("farmId", farm.id())
                         .queryParam("commodity", Commodity.SOYBEAN)
                         .build())
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
@@ -193,13 +208,16 @@ class CoreBackboneFlowIT {
                 .getBody();
 
         assertThat(costProfile.costPerTon()).isEqualByComparingTo("45.00");
+        assertThat(freightProfile.freightPerTon()).isEqualByComparingTo("20.00");
         assertThat(marketQuote.source()).isEqualTo("B3");
         assertThat(exchangeRate.source()).isEqualTo("BCB PTAX");
         assertThat(marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN)).isPresent();
         assertThat(exchangeRateRepository.findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL)).isPresent();
         assertThat(pricing).isNotNull();
+        assertThat(pricing.farmId()).isEqualTo(farm.id());
         assertThat(pricing.convertedPrice()).isEqualByComparingTo("718.05");
         assertThat(pricing.adjustedPrice()).isEqualByComparingTo("673.05");
+        assertThat(pricing.netPrice()).isEqualByComparingTo("653.05");
         assertThat(pricing.marketQuote().source()).isEqualTo("B3");
         assertThat(pricing.exchangeRate().source()).isEqualTo("BCB PTAX");
     }
@@ -353,6 +371,22 @@ class CoreBackboneFlowIT {
                 ))
                 .retrieve()
                 .toEntity(CostProfileResponse.class)
+                .getBody();
+    }
+
+    private FreightProfileResponse createFreightProfile(java.util.UUID farmId, String token) {
+        return restClient.post()
+                .uri("/api/cost/freight-profiles")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new FreightProfileCreateRequest(
+                        organization.getId(),
+                        farmId,
+                        Commodity.SOYBEAN,
+                        new BigDecimal("20.00")
+                ))
+                .retrieve()
+                .toEntity(FreightProfileResponse.class)
                 .getBody();
     }
 

@@ -2,6 +2,8 @@ package com.agrobasis.core_service.shared.api.error;
 
 import com.agrobasis.core_service.cost.domain.exception.CostProfileAlreadyExistsException;
 import com.agrobasis.core_service.cost.domain.exception.CostProfileNotFoundException;
+import com.agrobasis.core_service.cost.domain.exception.FreightProfileAlreadyExistsException;
+import com.agrobasis.core_service.cost.domain.exception.FreightProfileNotFoundException;
 import com.agrobasis.core_service.farm.domain.exception.FarmNotFoundException;
 import com.agrobasis.core_service.farm.domain.exception.PlotNotFoundException;
 import com.agrobasis.core_service.identity.domain.exception.InvalidCredentialsException;
@@ -21,6 +23,7 @@ import com.agrobasis.core_service.organization.domain.exception.OrganizationAlre
 import com.agrobasis.core_service.organization.domain.exception.OrganizationNotFoundException;
 import com.agrobasis.core_service.pricing.domain.exception.CostProfileUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.ExchangeRateUnavailableException;
+import com.agrobasis.core_service.pricing.domain.exception.FreightProfileUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.MarketQuoteUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.UnsupportedPricingContextException;
 import com.agrobasis.core_service.shared.domain.exception.TenantAccessDeniedException;
@@ -64,6 +67,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CostProfileNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleCostProfileNotFoundException(CostProfileNotFoundException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(FreightProfileAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleFreightProfileAlreadyExistsException(FreightProfileAlreadyExistsException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(FreightProfileNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleFreightProfileNotFoundException(FreightProfileNotFoundException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
@@ -149,6 +162,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CostProfileUnavailableException.class)
     public ResponseEntity<ErrorResponse> handleCostProfileUnavailableException(CostProfileUnavailableException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(FreightProfileUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleFreightProfileUnavailableException(FreightProfileUnavailableException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
