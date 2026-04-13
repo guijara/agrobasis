@@ -16,6 +16,8 @@ public record CurrentPricingResponse(
         BigDecimal adjustedPrice,
         BigDecimal freightPerTon,
         BigDecimal netPrice,
+        BigDecimal adjustmentPerTon,
+        BigDecimal commercialPrice,
         Currency targetCurrency,
         Unit unit,
         MarketQuoteSnapshotResponse marketQuote,

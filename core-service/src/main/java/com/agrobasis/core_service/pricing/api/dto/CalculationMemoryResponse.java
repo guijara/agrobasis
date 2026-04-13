@@ -6,12 +6,15 @@ public record CalculationMemoryResponse(
         String conversionFormula,
         String adjustmentFormula,
         String freightFormula,
+        String commercialFormula,
         BigDecimal marketPrice,
         BigDecimal exchangeRate,
         BigDecimal costPerTon,
         BigDecimal freightPerTon,
+        BigDecimal adjustmentPerTon,
         BigDecimal convertedPrice,
         BigDecimal adjustedPrice,
-        BigDecimal netPrice
+        BigDecimal netPrice,
+        BigDecimal commercialPrice
 ) {
 }

@@ -1,7 +1,9 @@
 package com.agrobasis.core_service.pricing.application;
 
+import com.agrobasis.core_service.cost.domain.CommercialAdjustmentProfile;
 import com.agrobasis.core_service.cost.domain.CostProfile;
 import com.agrobasis.core_service.cost.domain.FreightProfile;
+import com.agrobasis.core_service.cost.infrastructure.CommercialAdjustmentProfileRepository;
 import com.agrobasis.core_service.cost.infrastructure.CostProfileRepository;
 import com.agrobasis.core_service.cost.infrastructure.FreightProfileRepository;
 import com.agrobasis.core_service.farm.domain.Commodity;
@@ -14,6 +16,7 @@ import com.agrobasis.core_service.market.infrastructure.ExchangeRateRepository;
 import com.agrobasis.core_service.market.infrastructure.MarketQuoteRepository;
 import com.agrobasis.core_service.organization.domain.Organization;
 import com.agrobasis.core_service.pricing.api.dto.CurrentPricingResponse;
+import com.agrobasis.core_service.pricing.domain.exception.CommercialAdjustmentProfileUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.CostProfileUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.ExchangeRateUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.FreightProfileUnavailableException;
@@ -54,18 +57,22 @@ class PricingServiceTest {
     @Mock
     private FreightProfileRepository freightProfileRepository;
 
+    @Mock
+    private CommercialAdjustmentProfileRepository commercialAdjustmentProfileRepository;
+
     @InjectMocks
     private PricingService pricingService;
 
     @Test
-    @DisplayName("Should calculate current price successfully with freight")
-    void shouldCalculateCurrentPriceSuccessfullyWithFreight() {
+    @DisplayName("Should calculate current price successfully with commercial adjustment")
+    void shouldCalculateCurrentPriceSuccessfullyWithCommercialAdjustment() {
         MarketQuote marketQuote = createMarketQuote(Commodity.SOYBEAN, "132.45", Currency.USD, Unit.TON, "CEPEA");
         ExchangeRate exchangeRate = createExchangeRate(Currency.USD, Currency.BRL, "5.421300", "Banco Central");
         CostProfile costProfile = createCostProfile(Commodity.SOYBEAN, "45.00");
         FreightProfile freightProfile = createFreightProfile(Commodity.SOYBEAN, "20.00");
+        CommercialAdjustmentProfile commercialAdjustmentProfile = createCommercialAdjustmentProfile(Commodity.SOYBEAN, "10.00");
 
-        stubPricingDependencies(marketQuote, exchangeRate, costProfile, freightProfile);
+        stubPricingDependencies(marketQuote, exchangeRate, costProfile, freightProfile, commercialAdjustmentProfile);
 
         CurrentPricingResponse result = pricingService.calculateCurrentPrice(ORGANIZATION_ID, FARM_ID, Commodity.SOYBEAN);
 
@@ -78,20 +85,26 @@ class PricingServiceTest {
         assertThat(result.adjustedPrice()).isEqualByComparingTo("673.05");
         assertThat(result.freightPerTon()).isEqualByComparingTo("20.00");
         assertThat(result.netPrice()).isEqualByComparingTo("653.05");
+        assertThat(result.adjustmentPerTon()).isEqualByComparingTo("10.00");
+        assertThat(result.commercialPrice()).isEqualByComparingTo("643.05");
         assertThat(result.marketQuote().source()).isEqualTo("CEPEA");
         assertThat(result.exchangeRate().source()).isEqualTo("Banco Central");
         assertThat(result.calculationMemory().conversionFormula()).isEqualTo("price_in_usd_per_ton × usd_brl_rate");
         assertThat(result.calculationMemory().adjustmentFormula()).isEqualTo("converted_price - cost_per_ton");
         assertThat(result.calculationMemory().freightFormula()).isEqualTo("adjusted_price - freight_per_ton");
+        assertThat(result.calculationMemory().commercialFormula()).isEqualTo("net_price - adjustment_per_ton");
         assertThat(result.calculationMemory().costPerTon()).isEqualByComparingTo("45.00");
         assertThat(result.calculationMemory().freightPerTon()).isEqualByComparingTo("20.00");
+        assertThat(result.calculationMemory().adjustmentPerTon()).isEqualByComparingTo("10.00");
         assertThat(result.calculationMemory().convertedPrice()).isEqualByComparingTo("718.05");
         assertThat(result.calculationMemory().adjustedPrice()).isEqualByComparingTo("673.05");
         assertThat(result.calculationMemory().netPrice()).isEqualByComparingTo("653.05");
+        assertThat(result.calculationMemory().commercialPrice()).isEqualByComparingTo("643.05");
         verify(marketQuoteRepository).findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN);
         verify(exchangeRateRepository).findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL);
         verify(costProfileRepository).findByOrganization_IdAndCommodity(ORGANIZATION_ID, Commodity.SOYBEAN);
         verify(freightProfileRepository).findByOrganization_IdAndFarm_IdAndCommodity(ORGANIZATION_ID, FARM_ID, Commodity.SOYBEAN);
+        verify(commercialAdjustmentProfileRepository).findByOrganization_IdAndFarm_IdAndCommodity(ORGANIZATION_ID, FARM_ID, Commodity.SOYBEAN);
     }
 
     @Test
@@ -158,14 +171,39 @@ class PricingServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw exception when commercial adjustment profile is unavailable")
+    void shouldThrowExceptionWhenCommercialAdjustmentProfileIsUnavailable() {
+        MarketQuote marketQuote = createMarketQuote(Commodity.SOYBEAN, "132.45", Currency.USD, Unit.TON, "CEPEA");
+        ExchangeRate exchangeRate = createExchangeRate(Currency.USD, Currency.BRL, "5.421300", "Banco Central");
+        CostProfile costProfile = createCostProfile(Commodity.SOYBEAN, "45.00");
+        FreightProfile freightProfile = createFreightProfile(Commodity.SOYBEAN, "20.00");
+
+        when(marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN))
+                .thenReturn(Optional.of(marketQuote));
+        when(exchangeRateRepository.findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL))
+                .thenReturn(Optional.of(exchangeRate));
+        when(costProfileRepository.findByOrganization_IdAndCommodity(ORGANIZATION_ID, Commodity.SOYBEAN))
+                .thenReturn(Optional.of(costProfile));
+        when(freightProfileRepository.findByOrganization_IdAndFarm_IdAndCommodity(ORGANIZATION_ID, FARM_ID, Commodity.SOYBEAN))
+                .thenReturn(Optional.of(freightProfile));
+        when(commercialAdjustmentProfileRepository.findByOrganization_IdAndFarm_IdAndCommodity(ORGANIZATION_ID, FARM_ID, Commodity.SOYBEAN))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> pricingService.calculateCurrentPrice(ORGANIZATION_ID, FARM_ID, Commodity.SOYBEAN))
+                .isInstanceOf(CommercialAdjustmentProfileUnavailableException.class)
+                .hasMessage("Nenhum ajuste comercial disponível para a organização, fazenda e commodity informadas.");
+    }
+
+    @Test
     @DisplayName("Should throw exception when market quote currency is not USD")
     void shouldThrowExceptionWhenMarketQuoteCurrencyIsNotUsd() {
         MarketQuote marketQuote = createMarketQuote(Commodity.SOYBEAN, "132.45", Currency.BRL, Unit.TON, "CEPEA");
         ExchangeRate exchangeRate = createExchangeRate(Currency.USD, Currency.BRL, "5.421300", "Banco Central");
         CostProfile costProfile = createCostProfile(Commodity.SOYBEAN, "45.00");
         FreightProfile freightProfile = createFreightProfile(Commodity.SOYBEAN, "20.00");
+        CommercialAdjustmentProfile commercialAdjustmentProfile = createCommercialAdjustmentProfile(Commodity.SOYBEAN, "10.00");
 
-        stubPricingDependencies(marketQuote, exchangeRate, costProfile, freightProfile);
+        stubPricingDependencies(marketQuote, exchangeRate, costProfile, freightProfile, commercialAdjustmentProfile);
 
         assertThatThrownBy(() -> pricingService.calculateCurrentPrice(ORGANIZATION_ID, FARM_ID, Commodity.SOYBEAN))
                 .isInstanceOf(UnsupportedPricingContextException.class)
@@ -179,8 +217,9 @@ class PricingServiceTest {
         ExchangeRate exchangeRate = createExchangeRate(Currency.USD, Currency.BRL, "5.421300", "Banco Central");
         CostProfile costProfile = createCostProfile(Commodity.SOYBEAN, "45.00");
         FreightProfile freightProfile = createFreightProfile(Commodity.SOYBEAN, "20.00");
+        CommercialAdjustmentProfile commercialAdjustmentProfile = createCommercialAdjustmentProfile(Commodity.SOYBEAN, "10.00");
 
-        stubPricingDependencies(marketQuote, exchangeRate, costProfile, freightProfile);
+        stubPricingDependencies(marketQuote, exchangeRate, costProfile, freightProfile, commercialAdjustmentProfile);
 
         assertThatThrownBy(() -> pricingService.calculateCurrentPrice(ORGANIZATION_ID, FARM_ID, Commodity.SOYBEAN))
                 .isInstanceOf(UnsupportedPricingContextException.class)
@@ -194,15 +233,22 @@ class PricingServiceTest {
         ExchangeRate exchangeRate = createExchangeRate(Currency.BRL, Currency.USD, "0.184500", "Banco Central");
         CostProfile costProfile = createCostProfile(Commodity.SOYBEAN, "45.00");
         FreightProfile freightProfile = createFreightProfile(Commodity.SOYBEAN, "20.00");
+        CommercialAdjustmentProfile commercialAdjustmentProfile = createCommercialAdjustmentProfile(Commodity.SOYBEAN, "10.00");
 
-        stubPricingDependencies(marketQuote, exchangeRate, costProfile, freightProfile);
+        stubPricingDependencies(marketQuote, exchangeRate, costProfile, freightProfile, commercialAdjustmentProfile);
 
         assertThatThrownBy(() -> pricingService.calculateCurrentPrice(ORGANIZATION_ID, FARM_ID, Commodity.SOYBEAN))
                 .isInstanceOf(UnsupportedPricingContextException.class)
                 .hasMessage("O cálculo atual suporta apenas câmbio USD para BRL.");
     }
 
-    private void stubPricingDependencies(MarketQuote marketQuote, ExchangeRate exchangeRate, CostProfile costProfile, FreightProfile freightProfile) {
+    private void stubPricingDependencies(
+            MarketQuote marketQuote,
+            ExchangeRate exchangeRate,
+            CostProfile costProfile,
+            FreightProfile freightProfile,
+            CommercialAdjustmentProfile commercialAdjustmentProfile
+    ) {
         when(marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN))
                 .thenReturn(Optional.of(marketQuote));
         when(exchangeRateRepository.findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL))
@@ -211,6 +257,8 @@ class PricingServiceTest {
                 .thenReturn(Optional.of(costProfile));
         when(freightProfileRepository.findByOrganization_IdAndFarm_IdAndCommodity(ORGANIZATION_ID, FARM_ID, Commodity.SOYBEAN))
                 .thenReturn(Optional.of(freightProfile));
+        when(commercialAdjustmentProfileRepository.findByOrganization_IdAndFarm_IdAndCommodity(ORGANIZATION_ID, FARM_ID, Commodity.SOYBEAN))
+                .thenReturn(Optional.of(commercialAdjustmentProfile));
     }
 
     private MarketQuote createMarketQuote(Commodity commodity, String price, Currency currency, Unit unit, String source) {
@@ -254,6 +302,18 @@ class PricingServiceTest {
         freightProfile.setCommodity(commodity);
         freightProfile.setFreightPerTon(new BigDecimal(freightPerTon));
         return freightProfile;
+    }
+
+    private CommercialAdjustmentProfile createCommercialAdjustmentProfile(Commodity commodity, String adjustmentPerTon) {
+        Organization organization = createOrganization();
+        Farm farm = createFarm(organization);
+
+        CommercialAdjustmentProfile commercialAdjustmentProfile = new CommercialAdjustmentProfile();
+        commercialAdjustmentProfile.setOrganization(organization);
+        commercialAdjustmentProfile.setFarm(farm);
+        commercialAdjustmentProfile.setCommodity(commodity);
+        commercialAdjustmentProfile.setAdjustmentPerTon(new BigDecimal(adjustmentPerTon));
+        return commercialAdjustmentProfile;
     }
 
     private Organization createOrganization() {

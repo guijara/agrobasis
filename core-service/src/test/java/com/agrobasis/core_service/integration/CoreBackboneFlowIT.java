@@ -2,8 +2,11 @@ package com.agrobasis.core_service.integration;
 
 import com.agrobasis.core_service.cost.api.dto.CostProfileCreateRequest;
 import com.agrobasis.core_service.cost.api.dto.CostProfileResponse;
+import com.agrobasis.core_service.cost.api.dto.CommercialAdjustmentProfileCreateRequest;
+import com.agrobasis.core_service.cost.api.dto.CommercialAdjustmentProfileResponse;
 import com.agrobasis.core_service.cost.api.dto.FreightProfileCreateRequest;
 import com.agrobasis.core_service.cost.api.dto.FreightProfileResponse;
+import com.agrobasis.core_service.cost.infrastructure.CommercialAdjustmentProfileRepository;
 import com.agrobasis.core_service.cost.infrastructure.CostProfileRepository;
 import com.agrobasis.core_service.cost.infrastructure.FreightProfileRepository;
 import com.agrobasis.core_service.farm.api.dto.FarmCreateRequest;
@@ -75,6 +78,9 @@ class CoreBackboneFlowIT {
     private CostProfileRepository costProfileRepository;
 
     @Autowired
+    private CommercialAdjustmentProfileRepository commercialAdjustmentProfileRepository;
+
+    @Autowired
     private FreightProfileRepository freightProfileRepository;
 
     @Autowired
@@ -115,6 +121,7 @@ class CoreBackboneFlowIT {
                 .baseUrl("http://localhost:" + port)
                 .build();
 
+        commercialAdjustmentProfileRepository.deleteAll();
         costProfileRepository.deleteAll();
         freightProfileRepository.deleteAll();
         exchangeRateRepository.deleteAll();
@@ -158,6 +165,7 @@ class CoreBackboneFlowIT {
         ExchangeRateResponse exchangeRate = createExchangeRate(adminToken);
         CostProfileResponse costProfile = createCostProfile(adminToken);
         FreightProfileResponse freightProfile = createFreightProfile(farm.id(), adminToken);
+        CommercialAdjustmentProfileResponse commercialAdjustmentProfile = createCommercialAdjustmentProfile(farm.id(), adminToken);
 
         CurrentPricingResponse pricing = restClient.get()
                 .uri(builder -> builder.path("/api/pricing/current")
@@ -176,12 +184,14 @@ class CoreBackboneFlowIT {
         assertThat(exchangeRate.rate()).isEqualByComparingTo("5.421300");
         assertThat(costProfile.costPerTon()).isEqualByComparingTo("45.00");
         assertThat(freightProfile.freightPerTon()).isEqualByComparingTo("20.00");
+        assertThat(commercialAdjustmentProfile.adjustmentPerTon()).isEqualByComparingTo("10.00");
         assertThat(pricing).isNotNull();
         assertThat(pricing.commodity()).isEqualTo(Commodity.SOYBEAN);
         assertThat(pricing.farmId()).isEqualTo(farm.id());
         assertThat(pricing.convertedPrice()).isEqualByComparingTo("718.05");
         assertThat(pricing.adjustedPrice()).isEqualByComparingTo("673.05");
         assertThat(pricing.netPrice()).isEqualByComparingTo("653.05");
+        assertThat(pricing.commercialPrice()).isEqualByComparingTo("643.05");
     }
 
     @Test
@@ -193,6 +203,7 @@ class CoreBackboneFlowIT {
         FarmResponse farm = createFarm(adminToken);
         CostProfileResponse costProfile = createCostProfile(adminToken);
         FreightProfileResponse freightProfile = createFreightProfile(farm.id(), adminToken);
+        CommercialAdjustmentProfileResponse commercialAdjustmentProfile = createCommercialAdjustmentProfile(farm.id(), adminToken);
         MarketQuoteResponse marketQuote = syncMarketQuote(adminToken);
         ExchangeRateResponse exchangeRate = syncExchangeRate(adminToken);
 
@@ -209,6 +220,7 @@ class CoreBackboneFlowIT {
 
         assertThat(costProfile.costPerTon()).isEqualByComparingTo("45.00");
         assertThat(freightProfile.freightPerTon()).isEqualByComparingTo("20.00");
+        assertThat(commercialAdjustmentProfile.adjustmentPerTon()).isEqualByComparingTo("10.00");
         assertThat(marketQuote.source()).isEqualTo("B3");
         assertThat(exchangeRate.source()).isEqualTo("BCB PTAX");
         assertThat(marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN)).isPresent();
@@ -218,6 +230,7 @@ class CoreBackboneFlowIT {
         assertThat(pricing.convertedPrice()).isEqualByComparingTo("718.05");
         assertThat(pricing.adjustedPrice()).isEqualByComparingTo("673.05");
         assertThat(pricing.netPrice()).isEqualByComparingTo("653.05");
+        assertThat(pricing.commercialPrice()).isEqualByComparingTo("643.05");
         assertThat(pricing.marketQuote().source()).isEqualTo("B3");
         assertThat(pricing.exchangeRate().source()).isEqualTo("BCB PTAX");
     }
@@ -387,6 +400,22 @@ class CoreBackboneFlowIT {
                 ))
                 .retrieve()
                 .toEntity(FreightProfileResponse.class)
+                .getBody();
+    }
+
+    private CommercialAdjustmentProfileResponse createCommercialAdjustmentProfile(java.util.UUID farmId, String token) {
+        return restClient.post()
+                .uri("/api/cost/commercial-adjustment-profiles")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new CommercialAdjustmentProfileCreateRequest(
+                        organization.getId(),
+                        farmId,
+                        Commodity.SOYBEAN,
+                        new BigDecimal("10.00")
+                ))
+                .retrieve()
+                .toEntity(CommercialAdjustmentProfileResponse.class)
                 .getBody();
     }
 

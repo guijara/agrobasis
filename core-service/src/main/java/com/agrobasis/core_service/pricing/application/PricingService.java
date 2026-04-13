@@ -1,7 +1,9 @@
 package com.agrobasis.core_service.pricing.application;
 
+import com.agrobasis.core_service.cost.domain.CommercialAdjustmentProfile;
 import com.agrobasis.core_service.cost.domain.CostProfile;
 import com.agrobasis.core_service.cost.domain.FreightProfile;
+import com.agrobasis.core_service.cost.infrastructure.CommercialAdjustmentProfileRepository;
 import com.agrobasis.core_service.cost.infrastructure.CostProfileRepository;
 import com.agrobasis.core_service.cost.infrastructure.FreightProfileRepository;
 import com.agrobasis.core_service.farm.domain.Commodity;
@@ -15,6 +17,7 @@ import com.agrobasis.core_service.pricing.api.dto.CalculationMemoryResponse;
 import com.agrobasis.core_service.pricing.api.dto.CurrentPricingResponse;
 import com.agrobasis.core_service.pricing.api.dto.ExchangeRateSnapshotResponse;
 import com.agrobasis.core_service.pricing.api.dto.MarketQuoteSnapshotResponse;
+import com.agrobasis.core_service.pricing.domain.exception.CommercialAdjustmentProfileUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.CostProfileUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.ExchangeRateUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.FreightProfileUnavailableException;
@@ -36,6 +39,7 @@ public class PricingService {
     private final ExchangeRateRepository exchangeRateRepository;
     private final CostProfileRepository costProfileRepository;
     private final FreightProfileRepository freightProfileRepository;
+    private final CommercialAdjustmentProfileRepository commercialAdjustmentProfileRepository;
 
     public CurrentPricingResponse calculateCurrentPrice(UUID organizationId, UUID farmId, Commodity commodity) {
         MarketQuote marketQuote = marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(commodity)
@@ -51,6 +55,9 @@ public class PricingService {
         FreightProfile freightProfile = freightProfileRepository.findByOrganization_IdAndFarm_IdAndCommodity(organizationId, farmId, commodity)
                 .orElseThrow(() -> new FreightProfileUnavailableException("Nenhum frete disponível para a organização, fazenda e commodity informadas."));
 
+        CommercialAdjustmentProfile commercialAdjustmentProfile = commercialAdjustmentProfileRepository.findByOrganization_IdAndFarm_IdAndCommodity(organizationId, farmId, commodity)
+                .orElseThrow(() -> new CommercialAdjustmentProfileUnavailableException("Nenhum ajuste comercial disponível para a organização, fazenda e commodity informadas."));
+
         validatePricingContext(marketQuote, exchangeRate);
 
         BigDecimal convertedPrice = marketQuote.getPrice()
@@ -65,6 +72,10 @@ public class PricingService {
                 .subtract(freightProfile.getFreightPerTon())
                 .setScale(2, RoundingMode.HALF_UP);
 
+        BigDecimal commercialPrice = netPrice
+                .subtract(commercialAdjustmentProfile.getAdjustmentPerTon())
+                .setScale(2, RoundingMode.HALF_UP);
+
         return new CurrentPricingResponse(
                 marketQuote.getCommodity(),
                 farmId,
@@ -73,6 +84,8 @@ public class PricingService {
                 adjustedPrice,
                 freightProfile.getFreightPerTon(),
                 netPrice,
+                commercialAdjustmentProfile.getAdjustmentPerTon(),
+                commercialPrice,
                 Currency.BRL,
                 marketQuote.getUnit(),
                 new MarketQuoteSnapshotResponse(
@@ -94,13 +107,16 @@ public class PricingService {
                         "price_in_usd_per_ton × usd_brl_rate",
                         "converted_price - cost_per_ton",
                         "adjusted_price - freight_per_ton",
+                        "net_price - adjustment_per_ton",
                         marketQuote.getPrice(),
                         exchangeRate.getRate(),
                         costProfile.getCostPerTon(),
                         freightProfile.getFreightPerTon(),
+                        commercialAdjustmentProfile.getAdjustmentPerTon(),
                         convertedPrice,
                         adjustedPrice,
-                        netPrice
+                        netPrice,
+                        commercialPrice
                 ),
                 LocalDateTime.now()
         );

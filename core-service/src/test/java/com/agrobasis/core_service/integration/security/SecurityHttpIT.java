@@ -1,6 +1,7 @@
 package com.agrobasis.core_service.integration.security;
 
 import com.agrobasis.core_service.cost.infrastructure.CostProfileRepository;
+import com.agrobasis.core_service.cost.infrastructure.CommercialAdjustmentProfileRepository;
 import com.agrobasis.core_service.cost.infrastructure.FreightProfileRepository;
 import com.agrobasis.core_service.farm.infrastructure.FarmRepository;
 import com.agrobasis.core_service.farm.infrastructure.PlotRepository;
@@ -46,6 +47,9 @@ class SecurityHttpIT {
     private CostProfileRepository costProfileRepository;
 
     @Autowired
+    private CommercialAdjustmentProfileRepository commercialAdjustmentProfileRepository;
+
+    @Autowired
     private FreightProfileRepository freightProfileRepository;
 
     @Autowired
@@ -78,6 +82,7 @@ class SecurityHttpIT {
                 .baseUrl("http://localhost:" + port)
                 .build();
 
+        commercialAdjustmentProfileRepository.deleteAll();
         costProfileRepository.deleteAll();
         freightProfileRepository.deleteAll();
         exchangeRateRepository.deleteAll();
@@ -139,6 +144,31 @@ class SecurityHttpIT {
                           "organizationId": "%s",
                           "commodity": "SOYBEAN",
                           "costPerTon": 45.00
+                        }
+                        """.formatted(organization.getId()))
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError(), (req, res) -> {})
+                .toBodilessEntity();
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("Should return 403 when commercial adjustment profile role is insufficient")
+    void shouldReturn403WhenCommercialAdjustmentProfileRoleIsInsufficient() {
+        User viewer = saveUser("commercial-adjustment-viewer@agro.com", UserRole.VIEWER, organization);
+        String token = jwtService.generateToken(viewer);
+
+        var response = restClient.post()
+                .uri("/api/cost/commercial-adjustment-profiles")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {
+                          "organizationId": "%s",
+                          "farmId": "00000000-0000-0000-0000-000000000001",
+                          "commodity": "SOYBEAN",
+                          "adjustmentPerTon": 10.00
                         }
                         """.formatted(organization.getId()))
                 .retrieve()
