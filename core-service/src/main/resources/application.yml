@@ -24,3 +24,11 @@ spring:
 jwt:
   secret: ${JWT_SECRET:Zm9yLWRldmVsb3BtZW50LW9ubHktand0LXNlY3JldC1tdXN0LWJlLWxvbmdlbm91Z2g=}
   expiration: ${JWT_EXPIRATION:43200000}
+
+market:
+  integration:
+    bcb-base-url: ${MARKET_INTEGRATION_BCB_BASE_URL:https://olinda.bcb.gov.br}
+    b3-base-url: ${MARKET_INTEGRATION_B3_BASE_URL:https://bvmf.bmfbovespa.com.br}
+    b3-historical-quote-path: ${MARKET_INTEGRATION_B3_HISTORICAL_QUOTE_PATH:/InstDados/SerHist/COTAHIST_A{year}.ZIP}
+    connect-timeout: ${MARKET_INTEGRATION_CONNECT_TIMEOUT:5s}
+    read-timeout: ${MARKET_INTEGRATION_READ_TIMEOUT:10s}

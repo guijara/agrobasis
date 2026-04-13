@@ -8,6 +8,7 @@ import com.agrobasis.core_service.identity.domain.UserAccessStatus;
 import com.agrobasis.core_service.identity.domain.UserRole;
 import com.agrobasis.core_service.identity.domain.exception.MembershipRequestAlreadyExistsException;
 import com.agrobasis.core_service.identity.domain.exception.UnauthorizedOrganizationApprovalException;
+import com.agrobasis.core_service.identity.domain.exception.UserAccessNotAllowedException;
 import com.agrobasis.core_service.identity.infrastructure.MembershipRequestRepository;
 import com.agrobasis.core_service.identity.infrastructure.UserRepository;
 import com.agrobasis.core_service.identity.infrastructure.security.AuthenticatedUser;
@@ -80,6 +81,38 @@ class MembershipRequestServiceTest {
         assertThatThrownBy(() -> membershipRequestService.createMembershipRequest(user.getId(), organizationId))
                 .isInstanceOf(OrganizationNotFoundException.class)
                 .hasMessage("Organização não encontrada.");
+    }
+
+    @Test
+    @DisplayName("Should fail when user already has active access")
+    void shouldFailWhenUserAlreadyHasActiveAccess() {
+        User user = pendingUser();
+        user.setAccessStatus(UserAccessStatus.ACTIVE);
+        UUID organizationId = UUID.randomUUID();
+        when(userRepository.findWithOrganizationById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> membershipRequestService.createMembershipRequest(user.getId(), organizationId))
+                .isInstanceOf(UserAccessNotAllowedException.class)
+                .hasMessage("Usuário já possui acesso ativo a uma organização.");
+
+        verify(organizationRepository, never()).findById(any(UUID.class));
+        verify(membershipRequestRepository, never()).save(any(OrganizationMembershipRequest.class));
+    }
+
+    @Test
+    @DisplayName("Should fail when user is already linked to an organization")
+    void shouldFailWhenUserIsAlreadyLinkedToOrganization() {
+        User user = pendingUser();
+        user.setOrganization(organization());
+        UUID organizationId = UUID.randomUUID();
+        when(userRepository.findWithOrganizationById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> membershipRequestService.createMembershipRequest(user.getId(), organizationId))
+                .isInstanceOf(UserAccessNotAllowedException.class)
+                .hasMessage("Usuário já está vinculado a uma organização.");
+
+        verify(organizationRepository, never()).findById(any(UUID.class));
+        verify(membershipRequestRepository, never()).save(any(OrganizationMembershipRequest.class));
     }
 
     @Test

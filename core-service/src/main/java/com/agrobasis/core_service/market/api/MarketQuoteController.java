@@ -3,7 +3,9 @@ package com.agrobasis.core_service.market.api;
 import com.agrobasis.core_service.market.api.dto.MarketQuoteCreateRequest;
 import com.agrobasis.core_service.market.api.dto.MarketQuoteResponse;
 import com.agrobasis.core_service.market.api.dto.MarketQuoteUpdateRequest;
+import com.agrobasis.core_service.market.application.MarketSyncService;
 import com.agrobasis.core_service.market.application.MarketQuoteService;
+import com.agrobasis.core_service.farm.domain.Commodity;
 import com.agrobasis.core_service.shared.api.doc.ApiStandardErrors;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -34,6 +37,7 @@ import java.util.UUID;
 public class MarketQuoteController {
 
     private final MarketQuoteService marketQuoteService;
+    private final MarketSyncService marketSyncService;
 
     @Operation(summary = "Cria uma cotação de mercado", description = "Registra uma nova cotação para uma commodity.")
     @ApiResponse(responseCode = "201", description = "Cotação criada com sucesso")
@@ -41,6 +45,14 @@ public class MarketQuoteController {
     public ResponseEntity<MarketQuoteResponse> postMarketQuote(@Valid @RequestBody MarketQuoteCreateRequest request) {
         MarketQuoteResponse response = marketQuoteService.createMarketQuote(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Sincroniza cotação externa", description = "Busca a cotação mais recente em fonte externa e persiste um novo registro histórico.")
+    @ApiResponse(responseCode = "200", description = "Cotação sincronizada com sucesso")
+    @PostMapping("/sync")
+    public ResponseEntity<MarketQuoteResponse> syncMarketQuote(@RequestParam Commodity commodity) {
+        MarketQuoteResponse response = marketSyncService.syncLatestMarketQuote(commodity);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Busca cotação por ID", description = "Retorna os detalhes de uma cotação específica.")

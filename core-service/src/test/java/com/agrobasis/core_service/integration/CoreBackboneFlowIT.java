@@ -29,6 +29,10 @@ import com.agrobasis.core_service.market.domain.Currency;
 import com.agrobasis.core_service.market.domain.Unit;
 import com.agrobasis.core_service.market.infrastructure.ExchangeRateRepository;
 import com.agrobasis.core_service.market.infrastructure.MarketQuoteRepository;
+import com.agrobasis.core_service.market.infrastructure.integration.BcbExchangeRateClient;
+import com.agrobasis.core_service.market.infrastructure.integration.CommodityMarketQuoteClient;
+import com.agrobasis.core_service.market.infrastructure.integration.dto.ExternalExchangeRateData;
+import com.agrobasis.core_service.market.infrastructure.integration.dto.ExternalCommodityQuoteData;
 import com.agrobasis.core_service.organization.domain.Organization;
 import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
 import com.agrobasis.core_service.pricing.api.dto.CurrentPricingResponse;
@@ -36,8 +40,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,6 +55,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -85,6 +95,12 @@ class CoreBackboneFlowIT {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private CommodityMarketQuoteClient marketQuoteClient;
+
+    @Autowired
+    private BcbExchangeRateClient exchangeRateClient;
+
     private Organization organization;
 
     @BeforeEach
@@ -116,6 +132,8 @@ class CoreBackboneFlowIT {
         admin.setAccessStatus(UserAccessStatus.ACTIVE);
         admin.setOrganization(organization);
         userRepository.save(admin);
+
+        reset(marketQuoteClient, exchangeRateClient);
     }
 
     @Test
@@ -152,6 +170,38 @@ class CoreBackboneFlowIT {
         assertThat(pricing.commodity()).isEqualTo(Commodity.SOYBEAN);
         assertThat(pricing.convertedPrice()).isEqualByComparingTo("718.05");
         assertThat(pricing.adjustedPrice()).isEqualByComparingTo("673.05");
+    }
+
+    @Test
+    @DisplayName("Should sync external market data and calculate pricing from persisted records")
+    void shouldSyncExternalMarketDataAndCalculatePricingFromPersistedRecords() {
+        String adminToken = login("admin@agrotech.com", "SenhaForte123");
+        stubExternalMarketData();
+
+        CostProfileResponse costProfile = createCostProfile(adminToken);
+        MarketQuoteResponse marketQuote = syncMarketQuote(adminToken);
+        ExchangeRateResponse exchangeRate = syncExchangeRate(adminToken);
+
+        CurrentPricingResponse pricing = restClient.get()
+                .uri(builder -> builder.path("/api/pricing/current")
+                        .queryParam("organizationId", organization.getId())
+                        .queryParam("commodity", Commodity.SOYBEAN)
+                        .build())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                .retrieve()
+                .toEntity(CurrentPricingResponse.class)
+                .getBody();
+
+        assertThat(costProfile.costPerTon()).isEqualByComparingTo("45.00");
+        assertThat(marketQuote.source()).isEqualTo("B3");
+        assertThat(exchangeRate.source()).isEqualTo("BCB PTAX");
+        assertThat(marketQuoteRepository.findTopByCommodityOrderByQuotedAtDesc(Commodity.SOYBEAN)).isPresent();
+        assertThat(exchangeRateRepository.findTopByFromCurrencyAndToCurrencyOrderByQuotedAtDesc(Currency.USD, Currency.BRL)).isPresent();
+        assertThat(pricing).isNotNull();
+        assertThat(pricing.convertedPrice()).isEqualByComparingTo("718.05");
+        assertThat(pricing.adjustedPrice()).isEqualByComparingTo("673.05");
+        assertThat(pricing.marketQuote().source()).isEqualTo("B3");
+        assertThat(pricing.exchangeRate().source()).isEqualTo("BCB PTAX");
     }
 
     private UserResponse registerViewer() {
@@ -250,6 +300,47 @@ class CoreBackboneFlowIT {
                 .getBody();
     }
 
+    private MarketQuoteResponse syncMarketQuote(String token) {
+        return restClient.post()
+                .uri(builder -> builder.path("/api/market/quotes/sync")
+                        .queryParam("commodity", Commodity.SOYBEAN)
+                        .build())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .retrieve()
+                .toEntity(MarketQuoteResponse.class)
+                .getBody();
+    }
+
+    private ExchangeRateResponse syncExchangeRate(String token) {
+        return restClient.post()
+                .uri(builder -> builder.path("/api/market/exchange-rates/sync")
+                        .queryParam("fromCurrency", Currency.USD)
+                        .queryParam("toCurrency", Currency.BRL)
+                        .build())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .retrieve()
+                .toEntity(ExchangeRateResponse.class)
+                .getBody();
+    }
+
+    private void stubExternalMarketData() {
+        when(marketQuoteClient.fetchLatestCommodityQuote(Commodity.SOYBEAN)).thenReturn(new ExternalCommodityQuoteData(
+                Commodity.SOYBEAN,
+                new BigDecimal("132.45"),
+                Currency.USD,
+                Unit.TON,
+                "B3",
+                LocalDateTime.of(2026, 4, 13, 10, 0)
+        ));
+        when(exchangeRateClient.fetchLatestExchangeRate(Currency.USD, Currency.BRL)).thenReturn(new ExternalExchangeRateData(
+                Currency.USD,
+                Currency.BRL,
+                new BigDecimal("5.421300"),
+                "BCB PTAX",
+                LocalDateTime.of(2026, 4, 13, 10, 5)
+        ));
+    }
+
     private CostProfileResponse createCostProfile(String token) {
         return restClient.post()
                 .uri("/api/cost/profiles")
@@ -263,5 +354,21 @@ class CoreBackboneFlowIT {
                 .retrieve()
                 .toEntity(CostProfileResponse.class)
                 .getBody();
+    }
+
+    @TestConfiguration
+    static class MarketIntegrationTestConfiguration {
+
+        @Bean
+        @Primary
+        CommodityMarketQuoteClient marketQuoteClient() {
+            return mock(CommodityMarketQuoteClient.class);
+        }
+
+        @Bean
+        @Primary
+        BcbExchangeRateClient exchangeRateClient() {
+            return mock(BcbExchangeRateClient.class);
+        }
     }
 }

@@ -23,6 +23,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -102,6 +105,20 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(new LoginRequest(user.getEmail(), "Senha123")))
                 .isInstanceOf(UserAccessNotAllowedException.class)
                 .hasMessage("Usuário ainda não possui acesso aprovado a uma organização.");
+    }
+
+    @Test
+    @DisplayName("Should fail when user is active but has no organization")
+    void shouldFailWhenUserIsActiveButHasNoOrganization() {
+        User user = createUser(UserAccessStatus.ACTIVE);
+        user.setOrganization(null);
+        mockCredentials(user);
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest(user.getEmail(), "Senha123")))
+                .isInstanceOf(UserAccessNotAllowedException.class)
+                .hasMessage("Usuário ainda não possui acesso aprovado a uma organização.");
+
+        verify(jwtService, never()).generateToken(any(User.class));
     }
 
     private void mockCredentials(User user) {

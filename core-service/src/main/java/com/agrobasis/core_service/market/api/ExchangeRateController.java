@@ -4,6 +4,8 @@ import com.agrobasis.core_service.market.api.dto.ExchangeRateCreateRequest;
 import com.agrobasis.core_service.market.api.dto.ExchangeRateResponse;
 import com.agrobasis.core_service.market.api.dto.ExchangeRateUpdateRequest;
 import com.agrobasis.core_service.market.application.ExchangeRateService;
+import com.agrobasis.core_service.market.application.MarketSyncService;
+import com.agrobasis.core_service.market.domain.Currency;
 import com.agrobasis.core_service.shared.api.doc.ApiStandardErrors;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -34,6 +37,7 @@ import java.util.UUID;
 public class ExchangeRateController {
 
     private final ExchangeRateService exchangeRateService;
+    private final MarketSyncService marketSyncService;
 
     @Operation(summary = "Cria uma taxa de câmbio", description = "Registra uma nova taxa de câmbio.")
     @ApiResponse(responseCode = "201", description = "Taxa criada com sucesso")
@@ -41,6 +45,17 @@ public class ExchangeRateController {
     public ResponseEntity<ExchangeRateResponse> postExchangeRate(@Valid @RequestBody ExchangeRateCreateRequest request) {
         ExchangeRateResponse response = exchangeRateService.createExchangeRate(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Sincroniza taxa de câmbio externa", description = "Busca a taxa mais recente em fonte externa e persiste um novo registro histórico.")
+    @ApiResponse(responseCode = "200", description = "Taxa sincronizada com sucesso")
+    @PostMapping("/sync")
+    public ResponseEntity<ExchangeRateResponse> syncExchangeRate(
+            @RequestParam Currency fromCurrency,
+            @RequestParam Currency toCurrency
+    ) {
+        ExchangeRateResponse response = marketSyncService.syncLatestExchangeRate(fromCurrency, toCurrency);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Busca taxa por ID", description = "Retorna os detalhes de uma taxa específica.")

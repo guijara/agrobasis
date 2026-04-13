@@ -134,9 +134,9 @@ class CostProfileServiceTest {
             UUID organizationId = UUID.randomUUID();
             CostProfile costProfile = createCostProfile(id, organizationId, Commodity.SOYBEAN, "45.00");
 
-            when(costProfileRepository.findById(id)).thenReturn(Optional.of(costProfile));
+            when(costProfileRepository.findByIdAndOrganization_Id(id, organizationId)).thenReturn(Optional.of(costProfile));
 
-            CostProfileResponse result = costProfileService.getCostProfileById(id);
+            CostProfileResponse result = costProfileService.getCostProfileById(id, organizationId);
 
             assertThat(result.id()).isEqualTo(id);
             assertThat(result.organizationId()).isEqualTo(organizationId);
@@ -147,10 +147,24 @@ class CostProfileServiceTest {
         @DisplayName("Should throw exception when cost profile is not found by ID")
         void shouldThrowExceptionWhenCostProfileIsNotFoundById() {
             UUID id = UUID.randomUUID();
+            UUID organizationId = UUID.randomUUID();
 
-            when(costProfileRepository.findById(id)).thenReturn(Optional.empty());
+            when(costProfileRepository.findByIdAndOrganization_Id(id, organizationId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> costProfileService.getCostProfileById(id))
+            assertThatThrownBy(() -> costProfileService.getCostProfileById(id, organizationId))
+                    .isInstanceOf(CostProfileNotFoundException.class)
+                    .hasMessage("Perfil de custo não encontrado.");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when cost profile belongs to another organization")
+        void shouldThrowExceptionWhenCostProfileBelongsToAnotherOrganization() {
+            UUID id = UUID.randomUUID();
+            UUID organizationId = UUID.randomUUID();
+
+            when(costProfileRepository.findByIdAndOrganization_Id(id, organizationId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> costProfileService.getCostProfileById(id, organizationId))
                     .isInstanceOf(CostProfileNotFoundException.class)
                     .hasMessage("Perfil de custo não encontrado.");
         }
@@ -226,10 +240,10 @@ class CostProfileServiceTest {
             CostProfile costProfile = createCostProfile(id, organizationId, Commodity.SOYBEAN, "45.00");
             CostProfileUpdateRequest request = new CostProfileUpdateRequest(new BigDecimal("47.50"));
 
-            when(costProfileRepository.findById(id)).thenReturn(Optional.of(costProfile));
+            when(costProfileRepository.findByIdAndOrganization_Id(id, organizationId)).thenReturn(Optional.of(costProfile));
             when(costProfileRepository.save(costProfile)).thenReturn(costProfile);
 
-            CostProfileResponse result = costProfileService.updateCostProfile(id, request);
+            CostProfileResponse result = costProfileService.updateCostProfile(id, organizationId, request);
 
             assertThat(result.costPerTon()).isEqualByComparingTo("47.50");
             verify(costProfileRepository).save(costProfile);
@@ -239,11 +253,28 @@ class CostProfileServiceTest {
         @DisplayName("Should throw exception when updating missing cost profile")
         void shouldThrowExceptionWhenUpdatingMissingCostProfile() {
             UUID id = UUID.randomUUID();
+            UUID organizationId = UUID.randomUUID();
             CostProfileUpdateRequest request = new CostProfileUpdateRequest(new BigDecimal("47.50"));
 
-            when(costProfileRepository.findById(id)).thenReturn(Optional.empty());
+            when(costProfileRepository.findByIdAndOrganization_Id(id, organizationId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> costProfileService.updateCostProfile(id, request))
+            assertThatThrownBy(() -> costProfileService.updateCostProfile(id, organizationId, request))
+                    .isInstanceOf(CostProfileNotFoundException.class)
+                    .hasMessage("Perfil de custo não encontrado.");
+
+            verify(costProfileRepository, never()).save(any(CostProfile.class));
+        }
+
+        @Test
+        @DisplayName("Should throw exception when updating cost profile from another organization")
+        void shouldThrowExceptionWhenUpdatingCostProfileFromAnotherOrganization() {
+            UUID id = UUID.randomUUID();
+            UUID organizationId = UUID.randomUUID();
+            CostProfileUpdateRequest request = new CostProfileUpdateRequest(new BigDecimal("47.50"));
+
+            when(costProfileRepository.findByIdAndOrganization_Id(id, organizationId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> costProfileService.updateCostProfile(id, organizationId, request))
                     .isInstanceOf(CostProfileNotFoundException.class)
                     .hasMessage("Perfil de custo não encontrado.");
 

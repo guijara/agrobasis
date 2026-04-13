@@ -15,5 +15,7 @@ public interface CostProfileRepository extends JpaRepository<CostProfile, UUID> 
 
     Optional<CostProfile> findByOrganization_IdAndCommodity(UUID organizationId, Commodity commodity);
 
+    Optional<CostProfile> findByIdAndOrganization_Id(UUID id, UUID organizationId);
+
     List<CostProfile> findAllByOrganization_Id(UUID organizationId);
 }

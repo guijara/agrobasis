@@ -1,9 +1,9 @@
 package com.agrobasis.core_service.identity.infrastructure.security;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -29,7 +29,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/user").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/identity/membership-requests").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/organization").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/organization").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/organization").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/identity/membership-requests/*/approve").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/identity/membership-requests/*/reject").hasRole("ADMIN")
@@ -41,7 +41,12 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling(Customizer.withDefaults());
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN))
+                );
 
         return http.build();
     }

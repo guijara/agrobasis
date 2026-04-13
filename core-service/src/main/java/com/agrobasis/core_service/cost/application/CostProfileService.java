@@ -42,8 +42,8 @@ public class CostProfileService {
         return toResponse(savedCostProfile);
     }
 
-    public CostProfileResponse getCostProfileById(UUID id) {
-        CostProfile costProfile = costProfileRepository.findById(id)
+    public CostProfileResponse getCostProfileById(UUID id, UUID organizationId) {
+        CostProfile costProfile = costProfileRepository.findByIdAndOrganization_Id(id, organizationId)
                 .orElseThrow(() -> new CostProfileNotFoundException("Perfil de custo não encontrado."));
 
         return toResponse(costProfile);
@@ -64,8 +64,8 @@ public class CostProfileService {
     }
 
     @Transactional
-    public CostProfileResponse updateCostProfile(UUID id, CostProfileUpdateRequest request) {
-        CostProfile costProfile = costProfileRepository.findById(id)
+    public CostProfileResponse updateCostProfile(UUID id, UUID organizationId, CostProfileUpdateRequest request) {
+        CostProfile costProfile = costProfileRepository.findByIdAndOrganization_Id(id, organizationId)
                 .orElseThrow(() -> new CostProfileNotFoundException("Perfil de custo não encontrado."));
 
         costProfile.setCostPerTon(request.costPerTon());

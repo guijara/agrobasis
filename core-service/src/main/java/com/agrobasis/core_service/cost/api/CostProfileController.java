@@ -53,8 +53,11 @@ public class CostProfileController {
     @Operation(summary = "Busca perfil de custo por ID", description = "Retorna um perfil de custo específico.")
     @ApiResponse(responseCode = "200", description = "Perfil de custo encontrado")
     @GetMapping("/{id}")
-    public ResponseEntity<CostProfileResponse> getCostProfile(@PathVariable UUID id) {
-        CostProfileResponse response = costProfileService.getCostProfileById(id);
+    public ResponseEntity<CostProfileResponse> getCostProfile(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        CostProfileResponse response = costProfileService.getCostProfileById(id, authenticatedUser.organizationId());
         return ResponseEntity.ok(response);
     }
 
@@ -87,8 +90,9 @@ public class CostProfileController {
     @PutMapping("/{id}")
     public ResponseEntity<CostProfileResponse> putCostProfile(
             @PathVariable UUID id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Valid @RequestBody CostProfileUpdateRequest request) {
-        CostProfileResponse response = costProfileService.updateCostProfile(id, request);
+        CostProfileResponse response = costProfileService.updateCostProfile(id, authenticatedUser.organizationId(), request);
         return ResponseEntity.ok(response);
     }
 }

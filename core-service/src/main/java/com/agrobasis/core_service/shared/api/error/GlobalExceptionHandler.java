@@ -12,7 +12,11 @@ import com.agrobasis.core_service.identity.domain.exception.UserAccessNotAllowed
 import com.agrobasis.core_service.identity.domain.exception.UserEmailAlreadyExistsException;
 import com.agrobasis.core_service.identity.domain.exception.UserNotFoundException;
 import com.agrobasis.core_service.market.domain.exception.ExchangeRateNotFoundException;
+import com.agrobasis.core_service.market.domain.exception.ExternalMarketIntegrationException;
+import com.agrobasis.core_service.market.domain.exception.InvalidExternalMarketDataException;
 import com.agrobasis.core_service.market.domain.exception.MarketQuoteNotFoundException;
+import com.agrobasis.core_service.market.domain.exception.UnsupportedExternalCommodityException;
+import com.agrobasis.core_service.market.domain.exception.UnsupportedExternalExchangeRatePairException;
 import com.agrobasis.core_service.organization.domain.exception.OrganizationAlreadyExistsException;
 import com.agrobasis.core_service.organization.domain.exception.OrganizationNotFoundException;
 import com.agrobasis.core_service.pricing.domain.exception.CostProfileUnavailableException;
@@ -111,6 +115,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ExchangeRateNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleExchangeRateNotFoundException(ExchangeRateNotFoundException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ExternalMarketIntegrationException.class)
+    public ResponseEntity<ErrorResponse> handleExternalMarketIntegrationException(ExternalMarketIntegrationException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_GATEWAY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidExternalMarketDataException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidExternalMarketDataException(InvalidExternalMarketDataException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_GATEWAY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UnsupportedExternalCommodityException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedExternalCommodityException(UnsupportedExternalCommodityException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UnsupportedExternalExchangeRatePairException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedExternalExchangeRatePairException(UnsupportedExternalExchangeRatePairException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MarketQuoteUnavailableException.class)
