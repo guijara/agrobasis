@@ -28,6 +28,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestClient;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -205,6 +207,48 @@ class SecurityHttpIT {
                 .toBodilessEntity();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    @DisplayName("Should return 401 when pricing analysis endpoint is called without token")
+    void shouldReturn401WhenPricingAnalysisEndpointIsCalledWithoutToken() {
+        var response = restClient.get()
+                .uri(builder -> builder.path("/api/pricing/analysis/current")
+                        .queryParam("organizationId", organization.getId())
+                        .queryParam("farmId", UUID.randomUUID())
+                        .queryParam("commodity", "SOYBEAN")
+                        .build())
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError(), (req, res) -> {})
+                .toBodilessEntity();
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    @DisplayName("Should return 403 when pricing analysis tenant is different")
+    void shouldReturn403WhenPricingAnalysisTenantIsDifferent() {
+        Organization otherOrganization = new Organization();
+        otherOrganization.setName("Other Agro");
+        otherOrganization.setCnpj("11.111.111/0001-11");
+        otherOrganization.setLocation("Cuiaba");
+        otherOrganization = organizationRepository.save(otherOrganization);
+
+        User viewer = saveUser("pricing-analysis-viewer@agro.com", UserRole.VIEWER, otherOrganization);
+        String token = jwtService.generateToken(viewer);
+
+        var response = restClient.get()
+                .uri(builder -> builder.path("/api/pricing/analysis/current")
+                        .queryParam("organizationId", organization.getId())
+                        .queryParam("farmId", UUID.randomUUID())
+                        .queryParam("commodity", "SOYBEAN")
+                        .build())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError(), (req, res) -> {})
+                .toBodilessEntity();
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test

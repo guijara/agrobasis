@@ -28,6 +28,7 @@ import com.agrobasis.core_service.pricing.domain.exception.CommercialAdjustmentP
 import com.agrobasis.core_service.pricing.domain.exception.ExchangeRateUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.FreightProfileUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.MarketQuoteUnavailableException;
+import com.agrobasis.core_service.pricing.domain.exception.PricingAnalysisUnavailableException;
 import com.agrobasis.core_service.pricing.domain.exception.UnsupportedPricingContextException;
 import com.agrobasis.core_service.shared.domain.exception.TenantAccessDeniedException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -190,6 +191,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UnsupportedPricingContextException.class)
     public ResponseEntity<ErrorResponse> handleUnsupportedPricingContextException(UnsupportedPricingContextException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(PricingAnalysisUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handlePricingAnalysisUnavailableException(PricingAnalysisUnavailableException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 

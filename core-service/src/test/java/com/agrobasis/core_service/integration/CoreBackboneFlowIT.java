@@ -41,7 +41,9 @@ import com.agrobasis.core_service.market.infrastructure.integration.dto.External
 import com.agrobasis.core_service.market.infrastructure.integration.dto.ExternalCommodityQuoteData;
 import com.agrobasis.core_service.organization.domain.Organization;
 import com.agrobasis.core_service.organization.infrastructure.OrganizationRepository;
+import com.agrobasis.core_service.pricing.api.dto.CurrentPricingAnalysisResponse;
 import com.agrobasis.core_service.pricing.api.dto.CurrentPricingResponse;
+import com.agrobasis.core_service.pricing.api.dto.PricingIndicatorResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,6 +61,8 @@ import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -178,6 +182,17 @@ class CoreBackboneFlowIT {
                 .toEntity(CurrentPricingResponse.class)
                 .getBody();
 
+        CurrentPricingAnalysisResponse pricingAnalysis = restClient.get()
+                .uri(builder -> builder.path("/api/pricing/analysis/current")
+                        .queryParam("organizationId", organization.getId())
+                        .queryParam("farmId", farm.id())
+                        .queryParam("commodity", Commodity.SOYBEAN)
+                        .build())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + viewerToken)
+                .retrieve()
+                .toEntity(CurrentPricingAnalysisResponse.class)
+                .getBody();
+
         assertThat(viewer.organizationId()).isNull();
         assertThat(plot.commodity()).isEqualTo(Commodity.SOYBEAN);
         assertThat(marketQuote.price()).isEqualByComparingTo("132.45");
@@ -192,6 +207,26 @@ class CoreBackboneFlowIT {
         assertThat(pricing.adjustedPrice()).isEqualByComparingTo("673.05");
         assertThat(pricing.netPrice()).isEqualByComparingTo("653.05");
         assertThat(pricing.commercialPrice()).isEqualByComparingTo("643.05");
+        assertThat(pricingAnalysis).isNotNull();
+        assertThat(pricingAnalysis.commodity()).isEqualTo(Commodity.SOYBEAN);
+        assertThat(pricingAnalysis.farmId()).isEqualTo(farm.id());
+        assertThat(pricingAnalysis.convertedPrice()).isEqualByComparingTo("718.05");
+        assertThat(pricingAnalysis.composition().marketPriceInSourceCurrency()).isEqualByComparingTo("132.45");
+        assertThat(pricingAnalysis.composition().exchangeRate()).isEqualByComparingTo("5.421300");
+        assertThat(pricingAnalysis.composition().costPerTon()).isEqualByComparingTo("45.00");
+        assertThat(pricingAnalysis.composition().freightPerTon()).isEqualByComparingTo("20.00");
+        assertThat(pricingAnalysis.composition().adjustmentPerTon()).isEqualByComparingTo("10.00");
+        assertThat(pricingAnalysis.impactSummary().totalReductionFromCostsAndAdjustments()).isEqualByComparingTo("75.00");
+        assertThat(pricingAnalysis.impactSummary().marketToCommercialDelta()).isEqualByComparingTo("75.00");
+
+        Map<String, PricingIndicatorResponse> indicators = pricingAnalysis.indicators()
+                .stream()
+                .collect(Collectors.toMap(PricingIndicatorResponse::name, indicator -> indicator));
+        assertThat(indicators.get("cost_share_of_converted_price").value()).isEqualByComparingTo("6.27");
+        assertThat(indicators.get("freight_share_of_converted_price").value()).isEqualByComparingTo("2.79");
+        assertThat(indicators.get("commercial_adjustment_share_of_converted_price").value()).isEqualByComparingTo("1.39");
+        assertThat(indicators.get("commercial_price_retention").value()).isEqualByComparingTo("89.56");
+        assertThat(indicators.get("total_reduction_share_of_converted_price").value()).isEqualByComparingTo("10.44");
     }
 
     @Test
