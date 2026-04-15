@@ -44,3 +44,18 @@ Cada etapa macro pode ser dividida em subetapas menores, desde que a evolução 
 - rastreabilidade das decisões;
 - validação por testes;
 - alinhamento com a direção do produto.
+
+## Princípio transversal de evolução
+
+Ao longo de todas as etapas do AgroBasis, devem ser tratados como preocupações contínuas:
+
+- segurança do sistema;
+- proteção de segredos e credenciais;
+- isolamento entre organizações;
+- rastreabilidade e auditabilidade;
+- clareza e legibilidade de código;
+- eficiência de leitura e manutenção;
+- refatoração orientada à redução de acoplamento;
+- endurecimento progressivo da configuração e da infraestrutura.
+
+Após a consolidação do esqueleto funcional e das capacidades centrais do `core-service`, o projeto deve passar por ciclos explícitos de revisão e endurecimento técnico, com foco em segurança, qualidade estrutural e boas práticas operacionais.
