@@ -1,16 +1,40 @@
-# Skill: manutenção de documentação
+k# Skill: manutenção de documentação
 
 ## Objetivo
-Ajudar a manter a documentação do AgroBasis viva, coerente e útil.
+Manter a documentação do AgroBasis viva, coerente, rastreável e alinhada ao estado real do projeto.
 
-## Diretrizes
-- atualizar docs quando a implementação mudar de forma relevante;
-- preservar coerência entre roadmap, etapas, specs e decisões;
-- registrar simplificações e limitações conhecidas;
-- tratar markdown como fonte viva principal;
-- manter documentos curtos e orientados por responsabilidade.
+## Princípios
+- markdown é a fonte viva principal do conhecimento do projeto;
+- documentação de engenharia em PDF ou formato apresentável é derivada;
+- documentação deve refletir o entendimento atual do sistema, e não apenas o plano inicial.
 
-## Deve evitar
-- duplicação desnecessária entre docs;
-- manter documentação desatualizada por apego ao plano inicial;
-- escrever documentação genérica sem utilidade real.
+## Regras
+- atualizar documentação sempre que uma mudança relevante alterar:
+  - domínio;
+  - arquitetura;
+  - fluxo funcional;
+  - cálculo;
+  - segurança;
+  - roadmap;
+  - estrutura modular.
+
+- manter coerência entre:
+  - roadmap;
+  - stages;
+  - specs;
+  - plans;
+  - decisions;
+  - docs locais dos módulos.
+
+## Documentação por responsabilidade
+- docs da raiz: visão macro do sistema;
+- docs do módulo: contexto local do módulo;
+- specs: o que deve ser feito;
+- plans: como será implementado;
+- decisions: por que uma escolha relevante foi feita.
+
+## O que deve ser evitado
+- duplicação desnecessária entre arquivos;
+- manter documentação antiga por apego histórico;
+- escrever texto genérico sem utilidade operacional;
+- deixar documentação viva desatualizada enquanto o código evolui.

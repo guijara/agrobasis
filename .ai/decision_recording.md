@@ -1,15 +1,31 @@
 # Skill: registro de decisões
 
 ## Objetivo
-Ajudar a registrar decisões arquiteturais e de domínio relevantes do AgroBasis.
+Padronizar o registro de decisões arquiteturais, estruturais e de domínio do AgroBasis.
 
-## Diretrizes
-- explicar contexto, decisão, justificativa e consequências;
-- registrar trade-offs de forma clara;
-- priorizar decisões que afetam arquitetura, domínio ou direção futura;
-- manter o texto curto e objetivo.
+## Quando registrar uma decisão
+Registrar quando a mudança:
+- definir uma convenção estrutural importante;
+- alterar a direção arquitetural;
+- resolver uma dúvida de modelagem de domínio;
+- introduzir um trade-off relevante;
+- limitar explicitamente o escopo atual do sistema.
 
-## Deve evitar
+## Estrutura esperada
+Toda decisão deve conter:
+- contexto;
+- decisão tomada;
+- justificativa;
+- consequências.
+
+## Regras
+- ser claro e objetivo;
+- registrar também os trade-offs negativos;
+- preferir decisão curta e útil;
+- usar linguagem que facilite consulta futura.
+
+## O que deve ser evitado
 - registrar decisões triviais;
-- transformar decisão em narrativa longa;
-- omitir consequências negativas da escolha.
+- escrever decisões longas demais;
+- esconder desvantagens da escolha;
+- transformar decisão em log narrativo de implementação.
