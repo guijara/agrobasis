@@ -1,32 +1,54 @@
 # Visão geral dos módulos do core-service
 
+## Papel do core-service
+
 O `core-service` é o núcleo funcional atual do AgroBasis.
 
-Ele concentra os principais fluxos de domínio, segurança, integração de mercado, custos e cálculo econômico do sistema.
+Ele concentra os fluxos principais de domínio, segurança, integração inicial de mercado, perfis econômicos internos e cálculo econômico determinístico do sistema.
 
-## Módulos atuais
+## Organização modular atual
+
+O serviço está organizado como monólito modular, permitindo consolidar o núcleo do produto antes da introdução de novos serviços especializados.
+
+## Módulos principais
 
 ### `organization`
-Responsável pela entidade organizacional central do sistema e pela fronteira lógica de tenant.
+Define a organização como raiz lógica de tenant e contexto principal de pertencimento dos dados privados.
 
 ### `identity`
-Responsável por usuários, papéis, autenticação, vínculo organizacional e regras de acesso.
+Concentra identidade, autenticação, autorização e vínculo organizacional dos usuários.
 
 ### `farm`
-Responsável pela estrutura produtiva básica da organização, incluindo fazendas, talhões e commodity principal.
+Concentra a estrutura produtiva física básica, incluindo fazenda, talhão e commodity principal.
 
 ### `market`
-Responsável pelo armazenamento e sincronização de dados externos de referência econômica, como cotação e câmbio.
+Concentra cotações, câmbio e sincronização inicial de dados externos com persistência histórica.
 
 ### `cost`
-Responsável pelos perfis internos de custo, frete e ajuste comercial da organização.
+Concentra os perfis internos de custo, frete e ajuste comercial.
 
 ### `pricing`
-Responsável por transformar dados externos e internos em informação econômica útil, rastreável e explicável.
+Concentra o cálculo econômico determinístico e a primeira camada analítica do pricing.
 
 ### `shared`
-Responsável por elementos transversais do sistema, como tratamento global de erros, documentação de API, segurança auxiliar e componentes reutilizáveis.
+Concentra componentes transversais reutilizáveis, como tratamento de erro, segurança auxiliar, documentação de API e elementos comuns.
 
-## Objetivo desta documentação local
+## Relações entre módulos
 
-Os arquivos desta pasta existem para registrar o papel atual de cada módulo, seus limites e suas responsabilidades principais, sem substituir a documentação macro da raiz do projeto.
+- `identity` depende da noção de `organization` como tenant;
+- `farm` depende de `organization`;
+- `cost` depende de `organization`, `farm` e `commodity`;
+- `market` fornece referências externas persistidas;
+- `pricing` depende de `market` e `cost`.
+
+## Princípio de organização
+
+Cada módulo deve preservar sua responsabilidade principal e evitar conhecer detalhes internos demais dos demais contextos.
+
+A evolução do `core-service` deve continuar priorizando:
+
+- clareza de fronteiras;
+- baixo acoplamento;
+- crescimento incremental;
+- coerência com o domínio;
+- rastreabilidade do cálculo e das decisões.
