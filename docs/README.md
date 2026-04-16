@@ -74,3 +74,33 @@ A organização desta pasta busca manter o processo de desenvolvimento:
 - compatível com a evolução arquitetural do AgroBasis.
 
 O objetivo não é criar burocracia, mas sim melhorar a qualidade das decisões e reduzir ambiguidade antes da implementação.
+
+## Navegação rápida
+
+### Produto
+- `00-product/vision.md`
+- `00-product/roadmap.md`
+
+### Arquitetura
+- `01-architecture/system-overview.md`
+- `01-architecture/current-architecture.md`
+- `01-architecture/target-architecture.md`
+- `01-architecture/data-architecture.md`
+- `01-architecture/sdd-process.md`
+
+### Etapas
+- `02-stages/stage-a.md`
+- `02-stages/stage-b.md`
+- `02-stages/stage-c.md`
+
+### Especificação e execução
+- `03-specs/`
+- `04-plans/`
+- `05-decisions/`
+- `07-tasks/`
+
+### Templates
+- `06-templates/`
+
+### Engenharia
+- `engineering/`
